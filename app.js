@@ -682,6 +682,21 @@ function goConsulta() {
   window.scrollTo(0, 0)
 }
 
+function goBackFromDate() {
+  if (config?.servicos?.length !== 1) {
+    goStep(1)
+    return
+  }
+
+  const profs = getProfsDoServico(state.servico)
+  if (profs.length !== 1) {
+    goStep(2)
+    return
+  }
+
+  reiniciar()
+}
+
 function reiniciar() {
   state = { servico: null, profissional: null, data: null, hora: null, nome: '', tel: '', pin: '', mesAtual: new Date(), slotsData: null, clienteEncontrado: false, dataAutoSelecionada: false }
   document.getElementById('inputNome').value = ''
