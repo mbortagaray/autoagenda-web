@@ -618,18 +618,40 @@ function updateProgress(step) {
     bar.style.display = 'none'
     return
   }
+
+  const visibleSteps = getVisibleProgressSteps()
+  const visibleStep = visibleSteps.indexOf(step) + 1
+  const totalSteps = visibleSteps.length
+
   bar.style.display = 'flex'
   for (let i = 1; i <= 5; i++) {
     const dot = document.getElementById('dot' + i)
+    const line = i < 5 ? document.getElementById('line' + i) : null
+
+    if (i > totalSteps) {
+      dot.style.display = 'none'
+      if (line) line.style.display = 'none'
+      continue
+    }
+
+    dot.style.display = 'flex'
     dot.className = 'step-dot'
-    if (i < step) { dot.classList.add('done'); dot.textContent = '\u2713' }
-    else if (i === step) { dot.classList.add('active'); dot.textContent = i }
+    if (i < visibleStep) { dot.classList.add('done'); dot.textContent = '\u2713' }
+    else if (i === visibleStep) { dot.classList.add('active'); dot.textContent = i }
     else dot.textContent = i
-    if (i < 5) {
-      const line = document.getElementById('line' + i)
-      line.className = 'step-line' + (i < step ? ' done' : '')
+    if (line) {
+      line.style.display = i < totalSteps ? 'block' : 'none'
+      line.className = 'step-line' + (i < visibleStep ? ' done' : '')
     }
   }
+}
+
+function getVisibleProgressSteps() {
+  const steps = []
+  if (config?.servicos?.length !== 1) steps.push(1)
+  if (state.servico && getProfsDoServico(state.servico).length !== 1) steps.push(2)
+  steps.push(3, 4, 5)
+  return steps
 }
 
 function goConsulta() {
