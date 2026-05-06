@@ -87,13 +87,20 @@
     <div class="screen" id="step3">
       <div class="step1-header">
         <div>
-          <div class="section-title">Quando?</div>
-          <div class="section-hint">Escolha a data e o horário</div>
+          <div class="section-title" id="dateStepTitle">Quando?</div>
+          <div class="section-hint" id="dateStepHint">Escolha a data e o horário</div>
         </div>
         <button class="btn-consulta" onclick="goConsulta()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           Meus horários
         </button>
+      </div>
+      <div class="date-context" id="dateContext" style="display:none">
+        <div class="date-context-main" id="dateContextServico"></div>
+        <div class="date-context-meta">
+          <span id="dateContextDuracao"></span>
+          <span id="dateContextProf"></span>
+        </div>
       </div>
 
       <div class="cal-header">

@@ -275,6 +275,25 @@ function getProfDiasAtendimento() {
   return config.negocio.dias_atendimento
 }
 
+function renderDateContext() {
+  const serv = config.servicos.find(s => s.id === state.servico)
+  const prof = config.profissionais.find(p => p.id === state.profissional)
+  const context = document.getElementById('dateContext')
+
+  if (!serv) {
+    context.style.display = 'none'
+    return
+  }
+
+  document.getElementById('dateStepTitle').textContent = 'Quando?'
+  document.getElementById('dateStepHint').textContent = `Escolha um horário para ${serv.nome}`
+  document.getElementById('dateContextServico').textContent = serv.nome
+  document.getElementById('dateContextDuracao').textContent = `${serv.duracao_min} min`
+  document.getElementById('dateContextProf').textContent = prof?.nome || ''
+  document.getElementById('dateContextProf').style.display = prof ? 'inline' : 'none'
+  context.style.display = 'block'
+}
+
 function renderCal() {
   const m = state.mesAtual
   const ano = m.getFullYear(), mes = m.getMonth()
@@ -633,6 +652,7 @@ function goStep(n) {
     renderProfs()
   }
   if (n === 3) {
+    renderDateContext()
     renderCal()
     if (!state.data) {
       showInitialDateLoading()
