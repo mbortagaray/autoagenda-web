@@ -318,6 +318,25 @@ function renderCal() {
   grid.innerHTML = html
 }
 
+function getInitialAvailableDate() {
+  const diasAtendimento = getProfDiasAtendimento()
+  const date = new Date()
+  date.setHours(0, 0, 0, 0)
+
+  for (let i = 0; i < 45; i++) {
+    const diaSemana = DIAS_MAP[date.getDay()]
+    if (diasAtendimento.includes(diaSemana)) {
+      const ano = date.getFullYear()
+      const mes = String(date.getMonth() + 1).padStart(2, '0')
+      const dia = String(date.getDate()).padStart(2, '0')
+      return `${ano}-${mes}-${dia}`
+    }
+    date.setDate(date.getDate() + 1)
+  }
+
+  return null
+}
+
 async function selectData(dateStr) {
   state.data = dateStr
   state.hora = null
@@ -605,6 +624,13 @@ function goStep(n) {
   }
   if (n === 3) {
     renderCal()
+    if (!state.data) {
+      const initialDate = getInitialAvailableDate()
+      if (initialDate) {
+        selectData(initialDate)
+        return
+      }
+    }
     document.getElementById('slotsWrap').style.display = state.data ? 'block' : 'none'
     if (state.data && state.slotsData) renderSlots()
   }
