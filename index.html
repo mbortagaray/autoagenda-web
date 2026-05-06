@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agendamento Online</title>
+  <meta property="og:title" content="Agende seu horário">
+  <meta property="og:description" content="Escolha o serviço, profissional e horário. Rápido e sem complicação.">
+  <meta property="og:type" content="website">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loadingScreen" class="loading">
+  <div class="spinner"></div>
+  Carregando...
+</div>
+
+<div id="appContent" style="display:none">
+
+  <div class="header">
+    <div class="header-inner">
+      <img id="headerLogoImg" class="header-logo-img" style="display:none" alt="Logo">
+      <div class="header-logo" id="headerLogo">Carregando...</div>
+    </div>
+  </div>
+
+  <div class="biz-info" id="bizInfo" style="display:none">
+    <div class="biz-info-inner">
+      <div class="biz-info-item" id="bizEndereco">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span id="bizEnderecoText"></span>
+      </div>
+      <div class="biz-info-item" id="bizTelefone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        <span id="bizTelefoneText"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="progress-wrap" id="progressBar">
+    <div class="step-dot active" id="dot1">1</div>
+    <div class="step-line" id="line1"></div>
+    <div class="step-dot" id="dot2">2</div>
+    <div class="step-line" id="line2"></div>
+    <div class="step-dot" id="dot3">3</div>
+    <div class="step-line" id="line3"></div>
+    <div class="step-dot" id="dot4">4</div>
+    <div class="step-line" id="line4"></div>
+    <div class="step-dot" id="dot5">5</div>
+  </div>
+
+  <div class="main">
+
+    <!-- STEP 1: SERVICO -->
+    <div class="screen active" id="step1">
+      <div class="step1-header">
+        <div>
+          <div class="section-title">Qual serviço?</div>
+          <div class="section-hint">Selecione o que deseja realizar</div>
+        </div>
+        <button class="btn-consulta" onclick="goConsulta()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Meus horários
+        </button>
+      </div>
+      <div class="card-grid" id="servicoList"></div>
+      <button class="btn btn-primary" style="margin-top:20px" id="btnStep1" disabled onclick="goStep(2)">Continuar</button>
+    </div>
+
+    <!-- STEP 2: PROFISSIONAL -->
+    <div class="screen" id="step2">
+      <div class="section-title">Com quem?</div>
+      <div class="section-hint">Escolha o profissional</div>
+      <div class="card-grid" id="profList"></div>
+      <button class="btn btn-primary" style="margin-top:20px" id="btnStep2" disabled onclick="goStep(3)">Continuar</button>
+      <div class="nav-bottom">
+        <button class="btn btn-ghost" onclick="goStep(1)">&larr; Voltar</button>
+        <button class="btn btn-ghost btn-home" onclick="reiniciar()">Início</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: DATA E HORA -->
+    <div class="screen" id="step3">
+      <div class="section-title">Quando?</div>
+      <div class="section-hint">Escolha a data e o horário</div>
+
+      <div class="cal-header">
+        <button class="cal-nav" onclick="changeMonth(-1)">&lsaquo;</button>
+        <div class="cal-month" id="calMonthLabel"></div>
+        <button class="cal-nav" onclick="changeMonth(1)">&rsaquo;</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+
+      <div id="slotsWrap" style="display:none"></div>
+
+      <button class="btn btn-primary" style="margin-top:20px" id="btnStep3" disabled onclick="goStep(4)">Continuar</button>
+      <div class="nav-bottom">
+        <button class="btn btn-ghost" onclick="goStep(2)">&larr; Voltar</button>
+        <button class="btn btn-ghost btn-home" onclick="reiniciar()">Início</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: DADOS -->
+    <div class="screen" id="step4">
+      <div class="section-title">Seus dados</div>
+      <div class="section-hint">Digite seu WhatsApp para continuar</div>
+      <div class="form-group">
+        <label class="form-label">WhatsApp</label>
+        <input class="form-input" type="tel" id="inputTel" placeholder="(11) 99999-9999" oninput="onTelInput(this)">
+        <div class="cliente-feedback" id="clienteFeedback"></div>
+      </div>
+      <div class="form-group" id="nomeGroup" style="display:none">
+        <label class="form-label">Nome completo</label>
+        <input class="form-input" type="text" id="inputNome" placeholder="Maria Silva" oninput="checkStep4()">
+      </div>
+      <button class="btn btn-primary" id="btnStep4" disabled onclick="goStep(5)">Continuar</button>
+      <div class="nav-bottom">
+        <button class="btn btn-ghost" onclick="goStep(3)">&larr; Voltar</button>
+        <button class="btn btn-ghost btn-home" onclick="reiniciar()">Início</button>
+      </div>
+    </div>
+
+    <!-- STEP 5: CONFIRMAR -->
+    <div class="screen" id="step5">
+      <div class="section-title">Confirmar</div>
+      <div class="section-hint">Confira os detalhes antes de finalizar</div>
+      <div class="error-msg" id="errConfirm"></div>
+      <div class="resumo-card" id="resumoCard"></div>
+      <button class="btn btn-primary" onclick="confirmar()">Agendar agora</button>
+      <div class="nav-bottom">
+        <button class="btn btn-ghost" onclick="goStep(4)">&larr; Voltar</button>
+        <button class="btn btn-ghost btn-home" onclick="reiniciar()">Início</button>
+      </div>
+    </div>
+
+    <!-- STEP 6: SUCESSO -->
+    <div class="screen" id="step6">
+      <div class="success-wrap">
+        <div class="success-icon">&check;</div>
+        <div class="success-title">Agendado!</div>
+        <div class="success-sub">Seu horário foi confirmado.<br>Te esperamos!</div>
+        <div class="resumo-card" id="resumoFinal"></div>
+        <div id="locationCard"></div>
+        <button class="btn btn-primary" onclick="reiniciar()">Fazer novo agendamento</button>
+        <button class="btn btn-ghost" onclick="reiniciar()">&larr; Voltar ao início</button>
+      </div>
+    </div>
+
+    <!-- CONSULTA AGENDAMENTOS -->
+    <div class="screen" id="stepConsulta">
+      <div class="section-title">Meus agendamentos</div>
+      <div class="section-hint">Digite seu WhatsApp para consultar</div>
+      <div class="form-group">
+        <label class="form-label">WhatsApp</label>
+        <input class="form-input" type="tel" id="inputTelConsulta" placeholder="(11) 99999-9999" oninput="maskTel(this)">
+      </div>
+      <button class="btn btn-primary" onclick="showMeusAgendamentos()">Consultar</button>
+      <div id="meusAgendamentosContent" style="margin-top:20px"></div>
+      <button class="btn btn-ghost" onclick="reiniciar()">&larr; Voltar ao início</button>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    Powered by <a href="#">AutoAgenda</a>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
