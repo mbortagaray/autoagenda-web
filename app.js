@@ -312,8 +312,18 @@ function renderCal() {
   grid.innerHTML = html
 }
 
-function getInitialAvailableDate() {
+function hasAvailableSlots(slotsData) {
+  const slots = [
+    ...(slotsData?.manha || []),
+    ...(slotsData?.tarde || []),
+    ...(slotsData?.noite || []),
+  ]
+  return slots.some(slot => slot.disponivel)
+}
+
+async function findInitialAvailableDate() {
   const diasAtendimento = getProfDiasAtendimento()
+  const serv = config.servicos.find(s => s.id === state.servico)
   const date = new Date()
   date.setHours(0, 0, 0, 0)
 
@@ -323,7 +333,12 @@ function getInitialAvailableDate() {
       const ano = date.getFullYear()
       const mes = String(date.getMonth() + 1).padStart(2, '0')
       const dia = String(date.getDate()).padStart(2, '0')
-      return `${ano}-${mes}-${dia}`
+      const dateStr = `${ano}-${mes}-${dia}`
+      const slotsData = await fetchHorarios(state.profissional, dateStr, serv.duracao_min)
+
+      if (hasAvailableSlots(slotsData)) {
+        return { dateStr, slotsData }
+      }
     }
     date.setDate(date.getDate() + 1)
   }
@@ -344,7 +359,7 @@ async function selectData(dateStr, options = {}) {
   slotsWrap.innerHTML = '<div class="loading"><div class="spinner"></div>Buscando horários...</div>'
 
   try {
-    state.slotsData = await fetchHorarios(state.profissional, dateStr, serv.duracao_min)
+    state.slotsData = options.slotsData || await fetchHorarios(state.profissional, dateStr, serv.duracao_min)
     renderSlots()
   } catch (e) {
     slotsWrap.innerHTML = '<div style="color:#8B3A3A;text-align:center;padding:20px">Erro ao buscar horários</div>'
@@ -620,11 +635,17 @@ function goStep(n) {
   if (n === 3) {
     renderCal()
     if (!state.data) {
-      const initialDate = getInitialAvailableDate()
-      if (initialDate) {
-        selectData(initialDate, { auto: true })
-        return
-      }
+      showInitialDateLoading()
+      findInitialAvailableDate()
+        .then(result => {
+          if (result) {
+            selectData(result.dateStr, { auto: true, slotsData: result.slotsData })
+            return
+          }
+          showNoInitialAvailability()
+        })
+        .catch(showNoInitialAvailability)
+      return
     }
     document.getElementById('slotsWrap').style.display = state.data ? 'block' : 'none'
     if (state.data && state.slotsData) renderSlots()
@@ -673,6 +694,18 @@ function getVisibleProgressSteps() {
   if (state.servico && getProfsDoServico(state.servico).length !== 1) steps.push(2)
   steps.push(3, 4, 5)
   return steps
+}
+
+function showInitialDateLoading() {
+  const slotsWrap = document.getElementById('slotsWrap')
+  slotsWrap.style.display = 'block'
+  slotsWrap.innerHTML = '<div class="loading"><div class="spinner"></div>Buscando próximo horário disponível...</div>'
+}
+
+function showNoInitialAvailability() {
+  const slotsWrap = document.getElementById('slotsWrap')
+  slotsWrap.style.display = 'block'
+  slotsWrap.innerHTML = '<div style="text-align:center;color:#8A7060;padding:20px">Nenhum horário disponível nos próximos dias</div>'
 }
 
 function goConsulta() {
