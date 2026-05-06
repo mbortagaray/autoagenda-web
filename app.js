@@ -33,6 +33,7 @@ let state = {
   mesAtual: new Date(),
   slotsData: null,
   clienteEncontrado: false,
+  dataAutoSelecionada: false,
 }
 
 // ---- API CALLS ----
@@ -304,7 +305,7 @@ function renderCal() {
     const isAtendimento = diasAtendimento.includes(diaSemana)
     const isToday = data.toDateString() === hoje.toDateString()
     const dateStr = `${ano}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
-    const isSelected = state.data === dateStr
+    const isSelected = state.data === dateStr && !state.dataAutoSelecionada
 
     let cls = 'cal-day'
     if (isPast || !isAtendimento) cls += ' past'
@@ -337,8 +338,9 @@ function getInitialAvailableDate() {
   return null
 }
 
-async function selectData(dateStr) {
+async function selectData(dateStr, options = {}) {
   state.data = dateStr
+  state.dataAutoSelecionada = !!options.auto
   state.hora = null
   document.getElementById('btnStep3').disabled = true
   renderCal()
@@ -627,7 +629,7 @@ function goStep(n) {
     if (!state.data) {
       const initialDate = getInitialAvailableDate()
       if (initialDate) {
-        selectData(initialDate)
+        selectData(initialDate, { auto: true })
         return
       }
     }
@@ -688,7 +690,7 @@ function goConsulta() {
 }
 
 function reiniciar() {
-  state = { servico: null, profissional: null, data: null, hora: null, nome: '', tel: '', pin: '', mesAtual: new Date(), slotsData: null, clienteEncontrado: false }
+  state = { servico: null, profissional: null, data: null, hora: null, nome: '', tel: '', pin: '', mesAtual: new Date(), slotsData: null, clienteEncontrado: false, dataAutoSelecionada: false }
   document.getElementById('inputNome').value = ''
   document.getElementById('inputTel').value = ''
   document.getElementById('clienteFeedback').textContent = ''
