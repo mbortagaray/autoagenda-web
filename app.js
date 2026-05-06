@@ -7,9 +7,17 @@ const SUPABASE_URL = 'https://vsyiwgxsbvjjloftpvkf.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzeWl3Z3hzYnZqamxvZnRwdmtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwOTA2NzgsImV4cCI6MjA5MDY2NjY3OH0.DJqO-Y248xCr5mrffKcG2ZQQ_dhRubjzaQmF4V6sO90'
 const FUNCTIONS_URL = SUPABASE_URL + '/functions/v1'
 
-const slug = window.location.pathname.split('/').filter(Boolean).pop()
-  || new URLSearchParams(window.location.search).get('slug')
-  || 'espaco-bella'
+function getSlug() {
+  const querySlug = new URLSearchParams(window.location.search).get('slug')
+  if (querySlug) return querySlug
+
+  const pathSlug = window.location.pathname.split('/').filter(Boolean).pop()
+  if (!pathSlug || pathSlug === 'index.html') return 'espaco-bella'
+
+  return pathSlug
+}
+
+const slug = getSlug()
 
 // ---- PIN AUTOMÁTICO ----
 // Gerado a partir do telefone: remove não-dígitos, remove primeiro 9, pega 5 primeiros dígitos
@@ -98,11 +106,12 @@ async function init() {
     aplicarBizInfo(config.negocio)
     renderServicos()
     iniciarFluxoAdaptativo()
+    showLoading(false)
   } catch (e) {
     document.getElementById('loadingScreen').innerHTML =
       '<div style="padding:40px;text-align:center;color:#8B3A3A">Negócio não encontrado.</div>'
+    document.getElementById('appContent').style.display = 'none'
   }
-  showLoading(false)
 }
 
 function showLoading(show) {
@@ -222,16 +231,7 @@ function renderProfs() {
   const profsFiltrados = getProfsDoServico(state.servico)
   const cont = document.getElementById('profList')
 
-  let html = ''
-  if (profsFiltrados.length > 1) {
-    html += `
-      <div class="prof-card any-prof" id="prof_any" onclick="selectProf('any')">
-        <div class="prof-name">Sem preferência (primeiro disponível)</div>
-      </div>
-    `
-  }
-
-  html += profsFiltrados.map(p => {
+  const html = profsFiltrados.map(p => {
     const avatarHtml = p.foto_url
       ? `<img class="prof-avatar-img" src="${p.foto_url}" alt="${p.nome}">`
       : `<div class="prof-avatar" style="background:${p.avatar_cor}">${p.avatar_emoji}</div>`
@@ -257,15 +257,8 @@ function renderProfs() {
 function selectProf(id) {
   state.profissional = id
   document.querySelectorAll('#profList .prof-card').forEach(c => c.classList.remove('selected'))
-  if (id === 'any') {
-    const profs = getProfsDoServico(state.servico)
-    state.profissional = profs[0]?.id
-    const anyEl = document.getElementById('prof_any')
-    if (anyEl) anyEl.classList.add('selected')
-  } else {
-    const profEl = document.getElementById('prof_' + id)
-    if (profEl) profEl.classList.add('selected')
-  }
+  const profEl = document.getElementById('prof_' + id)
+  if (profEl) profEl.classList.add('selected')
   document.getElementById('btnStep2').disabled = false
 }
 
