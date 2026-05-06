@@ -96,7 +96,7 @@ async function init() {
     aplicarHeader(config.negocio)
     aplicarBizInfo(config.negocio)
     renderServicos()
-    goStep(1)
+    iniciarFluxoAdaptativo()
   } catch (e) {
     document.getElementById('loadingScreen').innerHTML =
       '<div style="padding:40px;text-align:center;color:#8B3A3A">Negócio não encontrado.</div>'
@@ -178,6 +178,29 @@ function renderServicos() {
   }).join('')
 }
 
+function getProfsDoServico(servicoId) {
+  return config.profissionais.filter(p => p.servico_ids.includes(servicoId))
+}
+
+function iniciarFluxoAdaptativo() {
+  if (config.servicos.length !== 1) {
+    goStep(1)
+    return
+  }
+
+  const servico = config.servicos[0]
+  selectServico(servico.id)
+
+  const profs = getProfsDoServico(servico.id)
+  if (profs.length === 1) {
+    selectProf(profs[0].id)
+    goStep(3)
+    return
+  }
+
+  goStep(2)
+}
+
 function selectServico(id) {
   state.servico = id
   state.profissional = null
@@ -186,16 +209,16 @@ function selectServico(id) {
     const action = c.querySelector('.card-action')
     if (action) action.style.display = 'none'
   })
-  document.getElementById('serv_' + id).classList.add('selected')
-  document.getElementById('servAction_' + id).style.display = 'block'
+  const servEl = document.getElementById('serv_' + id)
+  const actionEl = document.getElementById('servAction_' + id)
+  if (servEl) servEl.classList.add('selected')
+  if (actionEl) actionEl.style.display = 'block'
   document.getElementById('btnStep1').disabled = false
 }
 
 // ---- STEP 2: PROFISSIONAIS ----
 function renderProfs() {
-  const profsFiltrados = config.profissionais.filter(p =>
-    p.servico_ids.includes(state.servico)
-  )
+  const profsFiltrados = getProfsDoServico(state.servico)
   const cont = document.getElementById('profList')
 
   let html = ''
@@ -234,11 +257,13 @@ function selectProf(id) {
   state.profissional = id
   document.querySelectorAll('#profList .prof-card').forEach(c => c.classList.remove('selected'))
   if (id === 'any') {
-    const profs = config.profissionais.filter(p => p.servico_ids.includes(state.servico))
+    const profs = getProfsDoServico(state.servico)
     state.profissional = profs[0]?.id
-    document.getElementById('prof_any').classList.add('selected')
+    const anyEl = document.getElementById('prof_any')
+    if (anyEl) anyEl.classList.add('selected')
   } else {
-    document.getElementById('prof_' + id).classList.add('selected')
+    const profEl = document.getElementById('prof_' + id)
+    if (profEl) profEl.classList.add('selected')
   }
   document.getElementById('btnStep2').disabled = false
 }
@@ -561,10 +586,23 @@ function renderLocationCard() {
 
 // ---- NAVEGACAO ----
 function goStep(n) {
+  if (n === 1 && config?.servicos?.length === 1) {
+    iniciarFluxoAdaptativo()
+    return
+  }
+
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
   document.getElementById('step' + n).classList.add('active')
   updateProgress(n)
-  if (n === 2) renderProfs()
+  if (n === 2) {
+    const profs = getProfsDoServico(state.servico)
+    if (profs.length === 1) {
+      selectProf(profs[0].id)
+      goStep(3)
+      return
+    }
+    renderProfs()
+  }
   if (n === 3) {
     renderCal()
     document.getElementById('slotsWrap').style.display = state.data ? 'block' : 'none'
