@@ -292,7 +292,8 @@ function renderDateContext() {
   document.getElementById('dateContextServico').textContent = serv.nome
   document.getElementById('dateContextDuracao').textContent = `${serv.duracao_min} min`
   const profEl = document.getElementById('dateContextProf')
-  if (profEl) { profEl.textContent = prof?.nome || ''; profEl.style.display = prof ? 'inline' : 'none' }
+  const isUnicoProf = config.profissionais.filter(p => p.ativo !== false).length === 1
+  if (profEl) { profEl.textContent = prof?.nome || ''; profEl.style.display = (prof && !isUnicoProf) ? 'inline' : 'none' }
   context.style.display = 'block'
 }
 
