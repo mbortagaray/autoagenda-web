@@ -354,17 +354,35 @@ function renderProfHorarios(horarios) {
 
 function addHorarioRow() {
   const container = document.getElementById('pHorarios')
+  const dias = ['seg','ter','qua','qui','sex','sab','dom']
+
+  // Pegar horários já cadastrados
+  const existentes = [...container.querySelectorAll('.horario-row')].map(row => ({
+    dia: row.querySelector('[data-field="dia"]').value,
+    inicio: row.querySelector('[data-field="inicio"]').value,
+    fim: row.querySelector('[data-field="fim"]').value,
+  }))
+
+  // Sugerir próximo dia/turno ainda não cadastrado
+  let diaSugerido = 'seg', inicioSugerido = '08:00', fimSugerido = '12:00'
+  for (const dia of dias) {
+    const temManha = existentes.some(h => h.dia === dia && h.inicio < '12:00' && h.fim <= '13:00')
+    const temTarde = existentes.some(h => h.dia === dia && h.inicio >= '12:00')
+    if (!temManha) { diaSugerido = dia; inicioSugerido = '08:00'; fimSugerido = '12:00'; break }
+    if (!temTarde) { diaSugerido = dia; inicioSugerido = '13:00'; fimSugerido = '18:00'; break }
+  }
+
   const i = container.children.length
   container.insertAdjacentHTML('beforeend', `
     <div class="horario-row">
       <select data-h="${i}" data-field="dia">
-        ${['seg','ter','qua','qui','sex','sab','dom'].map(d =>
-          `<option value="${d}">${d.charAt(0).toUpperCase()+d.slice(1)}</option>`
+        ${dias.map(d =>
+          `<option value="${d}" ${d === diaSugerido ? 'selected' : ''}>${d.charAt(0).toUpperCase()+d.slice(1)}</option>`
         ).join('')}
       </select>
-      <input type="time" data-h="${i}" data-field="inicio" value="08:00">
+      <input type="time" data-h="${i}" data-field="inicio" value="${inicioSugerido}">
       <span>até</span>
-      <input type="time" data-h="${i}" data-field="fim" value="12:00">
+      <input type="time" data-h="${i}" data-field="fim" value="${fimSugerido}">
       <button class="btn-remove" onclick="this.parentElement.remove()">×</button>
     </div>
   `)
@@ -436,8 +454,7 @@ async function saveProf() {
     await sb.from('profissional_servicos').insert(checkedServicos)
   }
 
-  // Save horarios (delete + reinsert)
-  await sb.from('profissional_horarios').delete().eq('profissional_id', profId)
+  // Save horarios (delete + reinsert) — valida sobreposições antes
   const rows = document.querySelectorAll('#pHorarios .horario-row')
   const horarios = [...rows].map(row => ({
     profissional_id: profId,
@@ -445,6 +462,24 @@ async function saveProf() {
     hora_inicio: row.querySelector('[data-field="inicio"]').value,
     hora_fim: row.querySelector('[data-field="fim"]').value,
   }))
+
+  // Validar sobreposição: mesmo dia com horários que se cruzam
+  for (let i = 0; i < horarios.length; i++) {
+    for (let j = i + 1; j < horarios.length; j++) {
+      const a = horarios[i], b = horarios[j]
+      if (a.dia_semana !== b.dia_semana) continue
+      const aIni = a.hora_inicio, aFim = a.hora_fim
+      const bIni = b.hora_inicio, bFim = b.hora_fim
+      // Sobreposição: a começa antes do fim de b E b começa antes do fim de a
+      if (aIni < bFim && bIni < aFim) {
+        const dia = a.dia_semana.charAt(0).toUpperCase() + a.dia_semana.slice(1)
+        alert(`Horários sobrepostos em ${dia}: ${aIni}–${aFim} e ${bIni}–${bFim}.\nCorrija antes de salvar.`)
+        return
+      }
+    }
+  }
+
+  await sb.from('profissional_horarios').delete().eq('profissional_id', profId)
   if (horarios.length) {
     await sb.from('profissional_horarios').insert(horarios)
   }
