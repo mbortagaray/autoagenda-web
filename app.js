@@ -43,6 +43,7 @@ let state = {
   clienteEncontrado: false,
   proximaData: null,
   hojeEncerrado: false,
+  diaLotado: false,
 }
 
 // ---- API CALLS ----
@@ -330,7 +331,7 @@ function renderCal() {
     }
 
     if (isToday && !isPast) cls += ' today'
-    if (isSelected) cls += ' selected'
+    if (isSelected) cls += state.diaLotado ? ' selected-lotado' : ' selected'
     if (isProximo && !isSelected) cls += ' proximo'
 
     const clickable = !isPast && isAtendimento && !isTodayEncerrado
@@ -393,6 +394,8 @@ async function selectData(dateStr, options = {}) {
 
   try {
     state.slotsData = options.slotsData || await fetchHorarios(state.profissional, dateStr, serv.duracao_min)
+    state.diaLotado = !hasAvailableSlots(state.slotsData)
+    renderCal()
     renderSlots()
   } catch (e) {
     slotsWrap.innerHTML = '<div style="color:#8B3A3A;text-align:center;padding:20px">Erro ao buscar horários</div>'
@@ -783,7 +786,7 @@ function goBackFromDate() {
 }
 
 function reiniciar() {
-  state = { servico: null, profissional: null, data: null, hora: null, nome: '', tel: '', pin: '', mesAtual: new Date(), slotsData: null, clienteEncontrado: false, proximaData: null, hojeEncerrado: false }
+  state = { servico: null, profissional: null, data: null, hora: null, nome: '', tel: '', pin: '', mesAtual: new Date(), slotsData: null, clienteEncontrado: false, proximaData: null, hojeEncerrado: false, diaLotado: false }
   document.getElementById('inputNome').value = ''
   document.getElementById('inputTel').value = ''
   document.getElementById('clienteFeedback').textContent = ''

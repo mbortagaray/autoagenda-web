@@ -287,7 +287,11 @@ body {
   width: 4px; height: 4px; border-radius: 50%; background: var(--rose);
 }
 .cal-day.selected { background: var(--rose); color: white; font-weight: 600; }
-.cal-day.selected::after { background: var(--cream); }
+.cal-day.selected::after { background: white; }
+.cal-day.selected-lotado { background: var(--brown); color: white; font-weight: 600; cursor: default; }
+.cal-day.selected-lotado::after { background: var(--cream); }
+.cal-day.proximo.selected { background: var(--brown); color: white; }
+.cal-day.proximo.selected::after { background: var(--cream); }
 .cal-day.today { border: 2px solid var(--rose); font-weight: 600; }
 
 /* Próximo dia disponível — destaque sutil */
