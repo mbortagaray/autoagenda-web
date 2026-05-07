@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoAgenda — Super Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div class="login-logo">AutoAgenda</div>
+    <div class="login-sub">Super Admin</div>
+    <div class="login-error" id="loginError"></div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" type="email" id="loginEmail" placeholder="admin@exemplo.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Senha</label>
+      <input class="form-input" type="password" id="loginSenha" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn btn-primary" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="superApp" style="display:none">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-logo">AutoAgenda</div>
+    <div class="sidebar-badge">Super Admin</div>
+    <nav class="sidebar-nav">
+      <a class="nav-item active" data-tab="negocios" onclick="switchTab('negocios')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Negócios
+      </a>
+      <a class="nav-item" data-tab="usuarios" onclick="switchTab('usuarios')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Usuários
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+
+  <!-- MOBILE HEADER -->
+  <div class="mobile-header">
+    <button class="menu-toggle" onclick="toggleSidebar()">&#9776;</button>
+    <span class="mobile-title" id="mobileTitle">Negócios</span>
+    <button class="btn-logout-mobile" onclick="doLogout()">Sair</button>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- TAB: NEGÓCIOS -->
+    <div class="tab active" id="tab-negocios">
+      <div class="page-header">
+        <h1>Negócios</h1>
+        <button class="btn btn-primary btn-sm" onclick="showNegocioForm()">+ Novo negócio</button>
+      </div>
+      <div class="search-bar">
+        <input class="form-input" id="negocioSearch" placeholder="Buscar por nome ou slug..." oninput="filterNegocios()">
+      </div>
+      <div id="negociosContent"></div>
+    </div>
+
+    <!-- TAB: USUÁRIOS -->
+    <div class="tab" id="tab-usuarios">
+      <div class="page-header">
+        <h1>Usuários Admin</h1>
+        <button class="btn btn-primary btn-sm" onclick="showUsuarioForm()">+ Novo usuário</button>
+      </div>
+      <div id="usuariosContent"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL NEGÓCIO -->
+<div class="modal-overlay" id="modalNegocio" style="display:none">
+  <div class="modal modal-lg">
+    <div class="modal-title" id="modalNegocioTitle">Novo Negócio</div>
+
+    <div class="form-row">
+      <div class="form-group" style="flex:2">
+        <label class="form-label">Nome</label>
+        <input class="form-input" id="nNome" placeholder="Espaço Bella">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Slug (URL)</label>
+        <div class="slug-wrap">
+          <span class="slug-prefix">agenda/</span>
+          <input class="form-input slug-input" id="nSlug" placeholder="espaco-bella" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'-')">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Telefone</label>
+        <input class="form-input" id="nTel" placeholder="+55 (51) 99999-9999">
+      </div>
+      <div class="form-group" style="flex:2">
+        <label class="form-label">Endereço</label>
+        <input class="form-input" id="nEndereco" placeholder="Rua das Flores, 123">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Cidade</label>
+        <input class="form-input" id="nCidade" placeholder="Porto Alegre">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Google Maps URL</label>
+        <input class="form-input" id="nMaps" placeholder="https://maps.google.com/...">
+      </div>
+    </div>
+
+    <div class="form-section-title">Cores</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Primária</label>
+        <input class="form-input" type="color" id="nCorPrimaria" value="#3D2B1F">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Secundária</label>
+        <input class="form-input" type="color" id="nCorSecundaria" value="#C4947A">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fundo</label>
+        <input class="form-input" type="color" id="nCorFundo" value="#F9F5F0">
+      </div>
+    </div>
+
+    <div class="form-section-title">Agendamento</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Antecedência mínima (min)</label>
+        <input class="form-input" type="number" id="nAntecedencia" value="60">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Janela cancelamento (h)</label>
+        <input class="form-input" type="number" id="nJanela" value="24">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ativo</label>
+        <select class="form-input" id="nAtivo">
+          <option value="true">Sim</option>
+          <option value="false">Não</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="modalNegocioError" class="form-error" style="display:none"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalNegocio')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveNegocio()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL USUÁRIO -->
+<div class="modal-overlay" id="modalUsuario" style="display:none">
+  <div class="modal">
+    <div class="modal-title" id="modalUsuarioTitle">Novo Usuário Admin</div>
+
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" type="email" id="uEmail" placeholder="admin@negocio.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Senha inicial</label>
+      <input class="form-input" type="text" id="uSenha" placeholder="Mínimo 6 caracteres">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Negócio</label>
+      <select class="form-input" id="uNegocio"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Papel</label>
+      <select class="form-input" id="uRole">
+        <option value="owner">Owner</option>
+        <option value="admin">Admin</option>
+        <option value="superadmin">Super Admin</option>
+      </select>
+    </div>
+
+    <div id="modalUsuarioError" class="form-error" style="display:none"></div>
+    <div id="modalUsuarioSuccess" class="form-success" style="display:none"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalUsuario')">Fechar</button>
+      <button class="btn btn-primary" id="btnSaveUsuario" onclick="saveUsuario()">Criar usuário</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js"></script>
+</body>
+</html>

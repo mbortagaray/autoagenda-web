@@ -1,5 +1,7 @@
 {
   "rewrites": [
+    { "source": "/superadmin", "destination": "/superadmin/index.html" },
+    { "source": "/superadmin/(.*)", "destination": "/superadmin/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
