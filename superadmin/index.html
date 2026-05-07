@@ -163,10 +163,6 @@
     <div class="form-section-title">Agendamento</div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Antecedência mínima (min)</label>
-        <input class="form-input" type="number" id="nAntecedencia" value="60">
-      </div>
-      <div class="form-group">
         <label class="form-label">Janela cancelamento (h)</label>
         <input class="form-input" type="number" id="nJanela" value="24">
       </div>
@@ -199,14 +195,14 @@
       </div>
       <div class="form-group">
         <label class="form-label">Telefone</label>
-        <input class="form-input" id="pTel" placeholder="+55 (51) 99999-9999">
+        <input class="form-input" id="pTel" placeholder="(51) 99999-9999">
       </div>
     </div>
 
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Emoji</label>
-        <input class="form-input" id="pEmoji" placeholder="👤" style="font-size:20px">
+        <input class="form-input" id="pEmoji" placeholder="👤" style="text-align:center;font-size:20px">
       </div>
       <div class="form-group">
         <label class="form-label">Cor Avatar</label>
@@ -214,26 +210,26 @@
       </div>
       <div class="form-group" style="flex:2">
         <label class="form-label">Foto</label>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <img id="pFotoPreview" style="display:none;width:48px;height:48px;border-radius:50%;object-fit:cover">
           <label class="btn btn-ghost btn-sm" style="cursor:pointer">
             Escolher foto
-            <input type="file" id="pFotoFile" accept="image/*" style="display:none" onchange="previewFoto(this)">
+            <input type="file" id="pFotoFile" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="previewFoto(this)">
           </label>
           <span id="pFotoName" style="font-size:12px;color:#86868b"></span>
         </div>
-        <img id="pFotoPreview" style="display:none;margin-top:8px;width:60px;height:60px;border-radius:50%;object-fit:cover">
         <input type="hidden" id="pFoto">
       </div>
     </div>
 
     <div class="form-section-title">Serviços que realiza</div>
-    <div id="pServicos" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px"></div>
+    <div class="checkbox-grid" id="pServicos"></div>
 
-    <div class="form-section-title" style="display:flex;align-items:center;justify-content:space-between">
-      Horários de atendimento
+    <div class="form-section-title" style="display:flex;align-items:center;justify-content:space-between;margin-top:20px">
+      <span>Horários de atendimento</span>
       <button class="btn btn-ghost btn-sm" onclick="addHorarioRow()">+ Adicionar horário</button>
     </div>
-    <div id="pHorarios" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px"></div>
+    <div id="pHorarios" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
 
     <div id="modalProfError" class="form-error" style="display:none"></div>
     <div class="modal-actions">
@@ -246,8 +242,7 @@
 <!-- MODAL USUÁRIO -->
 <div class="modal-overlay" id="modalUsuario" style="display:none">
   <div class="modal">
-    <div class="modal-title" id="modalUsuarioTitle">Novo Usuário Admin</div>
-
+    <div class="modal-title">Novo Usuário Admin</div>
     <div class="form-group">
       <label class="form-label">Email</label>
       <input class="form-input" type="email" id="uEmail" placeholder="admin@negocio.com">
@@ -268,7 +263,6 @@
         <option value="superadmin">Super Admin</option>
       </select>
     </div>
-
     <div id="modalUsuarioError" class="form-error" style="display:none"></div>
     <div id="modalUsuarioSuccess" class="form-success" style="display:none"></div>
     <div class="modal-actions">
