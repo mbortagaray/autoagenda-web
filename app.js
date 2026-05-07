@@ -678,11 +678,10 @@ function goStep(n) {
     document.getElementById('slotsWrap').style.display = 'none'
     document.getElementById('btnStep3').disabled = true
     renderCal()
-    // Busca próximo disponível apenas para destacar (não seleciona)
+    // Busca próximo disponível, seleciona e já mostra horários
     showInitialDateLoading()
     findInitialAvailableDate()
       .then(result => {
-        document.getElementById('slotsWrap').style.display = 'none'
         if (result) {
           state.proximaData = result.dateStr
           // Rola para o mês do próximo disponível se for diferente do atual
@@ -691,7 +690,10 @@ function goStep(n) {
           if (pAno !== mAtual.getFullYear() || pMes !== mAtual.getMonth() + 1) {
             state.mesAtual = new Date(pAno, pMes - 1, 1)
           }
+          // Seleciona automaticamente e mostra horários
+          selectData(result.dateStr, { slotsData: result.slotsData })
         } else {
+          document.getElementById('slotsWrap').style.display = 'none'
           showNoInitialAvailability()
         }
         renderCal()

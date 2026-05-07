@@ -286,7 +286,7 @@ body {
   content: ''; position: absolute; bottom: 3px;
   width: 4px; height: 4px; border-radius: 50%; background: var(--rose);
 }
-.cal-day.selected { background: var(--brown); color: white; font-weight: 600; }
+.cal-day.selected { background: var(--rose); color: white; font-weight: 600; }
 .cal-day.selected::after { background: var(--cream); }
 .cal-day.today { border: 2px solid var(--rose); font-weight: 600; }
 
