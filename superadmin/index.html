@@ -40,6 +40,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         Negócios
       </a>
+      <a class="nav-item" data-tab="profissionais" onclick="switchTab('profissionais')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        Profissionais
+      </a>
       <a class="nav-item" data-tab="usuarios" onclick="switchTab('usuarios')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Usuários
@@ -70,6 +74,21 @@
         <input class="form-input" id="negocioSearch" placeholder="Buscar por nome ou slug..." oninput="filterNegocios()">
       </div>
       <div id="negociosContent"></div>
+    </div>
+
+    <!-- TAB: PROFISSIONAIS -->
+    <div class="tab" id="tab-profissionais">
+      <div class="page-header">
+        <h1>Profissionais</h1>
+        <button class="btn btn-primary btn-sm" onclick="showProfForm()">+ Novo profissional</button>
+      </div>
+      <div class="form-group" style="max-width:360px;margin-bottom:20px">
+        <label class="form-label">Negócio</label>
+        <select class="form-input" id="profNegocioSelect" onchange="onProfNegocioChange()">
+          <option value="">Selecione um negócio...</option>
+        </select>
+      </div>
+      <div id="profissionaisContent"><div class="empty-state">Selecione um negócio para ver os profissionais</div></div>
     </div>
 
     <!-- TAB: USUÁRIOS -->
@@ -168,6 +187,62 @@
   </div>
 </div>
 
+<!-- MODAL PROFISSIONAL -->
+<div class="modal-overlay" id="modalProf" style="display:none">
+  <div class="modal modal-lg">
+    <div class="modal-title" id="modalProfTitle">Novo Profissional</div>
+
+    <div class="form-row">
+      <div class="form-group" style="flex:2">
+        <label class="form-label">Nome</label>
+        <input class="form-input" id="pNome" placeholder="Ana Costa">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Telefone</label>
+        <input class="form-input" id="pTel" placeholder="+55 (51) 99999-9999">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Emoji</label>
+        <input class="form-input" id="pEmoji" placeholder="👤" style="font-size:20px">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cor Avatar</label>
+        <input class="form-input" type="color" id="pCor" value="#E8DDD0">
+      </div>
+      <div class="form-group" style="flex:2">
+        <label class="form-label">Foto</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+            Escolher foto
+            <input type="file" id="pFotoFile" accept="image/*" style="display:none" onchange="previewFoto(this)">
+          </label>
+          <span id="pFotoName" style="font-size:12px;color:#86868b"></span>
+        </div>
+        <img id="pFotoPreview" style="display:none;margin-top:8px;width:60px;height:60px;border-radius:50%;object-fit:cover">
+        <input type="hidden" id="pFoto">
+      </div>
+    </div>
+
+    <div class="form-section-title">Serviços que realiza</div>
+    <div id="pServicos" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px"></div>
+
+    <div class="form-section-title" style="display:flex;align-items:center;justify-content:space-between">
+      Horários de atendimento
+      <button class="btn btn-ghost btn-sm" onclick="addHorarioRow()">+ Adicionar horário</button>
+    </div>
+    <div id="pHorarios" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px"></div>
+
+    <div id="modalProfError" class="form-error" style="display:none"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalProf')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveProf()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL USUÁRIO -->
 <div class="modal-overlay" id="modalUsuario" style="display:none">
   <div class="modal">
@@ -204,6 +279,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/superadmin/app.js"></script>  
+<script src="/superadmin/app.js"></script>
 </body>
 </html>
