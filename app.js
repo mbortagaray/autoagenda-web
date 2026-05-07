@@ -321,20 +321,12 @@ function renderCal() {
     const isSelected = state.data === dateStr
     const isProximo = state.proximaData === dateStr
 
-    // Dia de hoje com expediente encerrado (hora atual >= fim do expediente ou sem slots)
     const isTodayEncerrado = isToday && isAtendimento && state.hojeEncerrado
 
     let cls = 'cal-day'
-    let faixa = ''
 
-    if (isPast) {
+    if (isPast || !isAtendimento || isTodayEncerrado) {
       cls += ' past'
-    } else if (!isAtendimento) {
-      cls += ' sem-horario'
-      faixa = `<span class="cal-ribbon">Sem horário</span>`
-    } else if (isTodayEncerrado) {
-      cls += ' encerrado'
-      faixa = `<span class="cal-ribbon">Encerrado</span>`
     } else {
       cls += ' available has-slots'
     }
@@ -345,7 +337,7 @@ function renderCal() {
 
     const clickable = !isPast && isAtendimento && !isTodayEncerrado
     const click = clickable ? `onclick="selectData('${dateStr}')"` : ''
-    html += `<div class="${cls}" ${click}>${d}${faixa}</div>`
+    html += `<div class="${cls}" ${click}>${d}</div>`
   }
   grid.innerHTML = html
 }
