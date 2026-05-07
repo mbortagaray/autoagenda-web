@@ -290,8 +290,6 @@ function renderDateContext() {
   document.getElementById('dateStepHint').textContent = `Escolha um horário para ${serv.nome}`
   document.getElementById('dateContextServico').textContent = serv.nome
   document.getElementById('dateContextDuracao').textContent = `${serv.duracao_min} min`
-  document.getElementById('dateContextProf').textContent = prof?.nome || ''
-  document.getElementById('dateContextProf').style.display = prof ? 'inline' : 'none'
   context.style.display = 'block'
 }
 
