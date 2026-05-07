@@ -94,10 +94,7 @@ function closeModal(id) {
 
 // ---- NEGÓCIOS ----
 async function loadNegocios() {
-  const { data } = await sb
-    .from('negocios')
-    .select('*')
-    .order('nome')
+  const { data } = await sb.from('negocios').select('*').order('nome')
   negocios = data || []
   renderNegocios(negocios)
 }
@@ -116,7 +113,6 @@ function renderNegocios(list) {
     cont.innerHTML = '<div class="empty-state">Nenhum negócio encontrado</div>'
     return
   }
-
   cont.innerHTML = list.map(n => `
     <div class="table-row">
       <div class="table-main">
@@ -152,7 +148,6 @@ function showNegocioForm() {
   document.getElementById('nCorPrimaria').value = '#3D2B1F'
   document.getElementById('nCorSecundaria').value = '#C4947A'
   document.getElementById('nCorFundo').value = '#F9F5F0'
-  document.getElementById('nAntecedencia').value = '60'
   document.getElementById('nJanela').value = '24'
   document.getElementById('nAtivo').value = 'true'
   document.getElementById('modalNegocioError').style.display = 'none'
@@ -170,10 +165,9 @@ function editNegocio(id) {
   document.getElementById('nEndereco').value = n.endereco || ''
   document.getElementById('nCidade').value = n.cidade || ''
   document.getElementById('nMaps').value = n.google_maps_url || ''
-  document.getElementById('nCorPrimaria').value = n.cores?.primaria || '#3D2B1F'
-  document.getElementById('nCorSecundaria').value = n.cores?.secundaria || '#C4947A'
-  document.getElementById('nCorFundo').value = n.cores?.fundo || '#F9F5F0'
-  document.getElementById('nAntecedencia').value = n.antecedencia_minima_min || 60
+  document.getElementById('nCorPrimaria').value = n.cor_primaria || '#3D2B1F'
+  document.getElementById('nCorSecundaria').value = n.cor_secundaria || '#C4947A'
+  document.getElementById('nCorFundo').value = n.cor_fundo || '#F9F5F0'
   document.getElementById('nJanela').value = n.janela_cancelamento_horas || 24
   document.getElementById('nAtivo').value = String(n.ativo !== false)
   document.getElementById('modalNegocioError').style.display = 'none'
@@ -200,12 +194,9 @@ async function saveNegocio() {
     endereco: document.getElementById('nEndereco').value.trim() || null,
     cidade: document.getElementById('nCidade').value.trim() || null,
     google_maps_url: document.getElementById('nMaps').value.trim() || null,
-    cores: {
-      primaria: document.getElementById('nCorPrimaria').value,
-      secundaria: document.getElementById('nCorSecundaria').value,
-      fundo: document.getElementById('nCorFundo').value,
-    },
-    antecedencia_minima_min: Number(document.getElementById('nAntecedencia').value) || 60,
+    cor_primaria: document.getElementById('nCorPrimaria').value,
+    cor_secundaria: document.getElementById('nCorSecundaria').value,
+    cor_fundo: document.getElementById('nCorFundo').value,
     janela_cancelamento_horas: Number(document.getElementById('nJanela').value) || 24,
     ativo: document.getElementById('nAtivo').value === 'true',
   }
@@ -265,15 +256,14 @@ async function loadProfissionaisDoNegocio(negocioId) {
   profNegocioId = negocioId
   document.getElementById('profissionaisContent').innerHTML = '<div class="empty-state">Carregando...</div>'
 
-  // Carregar serviços do negócio
   const { data: svcs } = await sb
     .from('servicos')
     .select('*')
     .eq('negocio_id', negocioId)
+    .eq('ativo', true)
     .order('nome')
   servicos = svcs || []
 
-  // Carregar profissionais
   const { data } = await sb
     .from('profissionais')
     .select('*, profissional_servicos(servico_id), profissional_horarios(id, dia_semana, hora_inicio, hora_fim)')
@@ -311,10 +301,7 @@ function renderProfissionais() {
 }
 
 function showProfForm() {
-  if (!profNegocioId) {
-    alert('Selecione um negócio primeiro')
-    return
-  }
+  if (!profNegocioId) { alert('Selecione um negócio primeiro'); return }
   editingProfId = null
   document.getElementById('modalProfTitle').textContent = 'Novo Profissional'
   document.getElementById('pNome').value = ''
@@ -325,7 +312,6 @@ function showProfForm() {
   document.getElementById('pFotoPreview').style.display = 'none'
   document.getElementById('pFotoFile').value = ''
   document.getElementById('pFotoName').textContent = ''
-
   renderProfServicos([])
   const defaultH = []
   ;['seg','ter','qua','qui','sex','sab'].forEach(d => {
@@ -333,7 +319,6 @@ function showProfForm() {
     defaultH.push({ dia_semana: d, hora_inicio: '13:00', hora_fim: '18:00' })
   })
   renderProfHorarios(defaultH)
-
   document.getElementById('modalProfError').style.display = 'none'
   document.getElementById('modalProf').style.display = 'flex'
 }
@@ -352,12 +337,8 @@ function editProf(id) {
   document.getElementById('pFotoName').textContent = ''
 
   const preview = document.getElementById('pFotoPreview')
-  if (p.foto_url) {
-    preview.src = p.foto_url
-    preview.style.display = 'block'
-  } else {
-    preview.style.display = 'none'
-  }
+  if (p.foto_url) { preview.src = p.foto_url; preview.style.display = 'block' }
+  else { preview.style.display = 'none' }
 
   const profServIds = (p.profissional_servicos || []).map(ps => ps.servico_id)
   renderProfServicos(profServIds)
@@ -370,10 +351,10 @@ function editProf(id) {
 function renderProfServicos(selectedIds) {
   const container = document.getElementById('pServicos')
   if (!servicos.length) {
-    container.innerHTML = '<div style="color:#86868b;font-size:13px">Nenhum serviço cadastrado neste negócio</div>'
+    container.innerHTML = '<div style="color:#86868b;font-size:13px">Nenhum serviço ativo neste negócio</div>'
     return
   }
-  container.innerHTML = servicos.filter(s => s.ativo).map(s => `
+  container.innerHTML = servicos.map(s => `
     <label class="checkbox-item ${selectedIds.includes(s.id) ? 'checked' : ''}" onclick="this.classList.toggle('checked')">
       <input type="checkbox" value="${s.id}" ${selectedIds.includes(s.id) ? 'checked' : ''}>
       ${s.nome}
@@ -433,28 +414,19 @@ function addHorarioRow() {
 function previewFoto(input) {
   const file = input.files[0]
   if (!file) return
-  const preview = document.getElementById('pFotoPreview')
-  const nameEl = document.getElementById('pFotoName')
-  preview.src = URL.createObjectURL(file)
-  preview.style.display = 'block'
-  nameEl.textContent = file.name
+  document.getElementById('pFotoPreview').src = URL.createObjectURL(file)
+  document.getElementById('pFotoPreview').style.display = 'block'
+  document.getElementById('pFotoName').textContent = file.name
 }
 
 async function uploadFoto(profId) {
   const fileInput = document.getElementById('pFotoFile')
   const file = fileInput.files[0]
   if (!file) return document.getElementById('pFoto').value || null
-
   const ext = file.name.split('.').pop()
   const path = `profissionais/${profId}.${ext}`
-
-  const { error } = await sb.storage.from('fotos').upload(path, file, {
-    upsert: true,
-    contentType: file.type,
-  })
-
+  const { error } = await sb.storage.from('fotos').upload(path, file, { upsert: true, contentType: file.type })
   if (error) return document.getElementById('pFoto').value || null
-
   const { data } = sb.storage.from('fotos').getPublicUrl(path)
   return data.publicUrl + '?t=' + Date.now()
 }
@@ -464,11 +436,7 @@ async function saveProf() {
   errEl.style.display = 'none'
 
   const nome = document.getElementById('pNome').value.trim()
-  if (!nome) {
-    errEl.textContent = 'Nome é obrigatório'
-    errEl.style.display = 'block'
-    return
-  }
+  if (!nome) { errEl.textContent = 'Nome é obrigatório'; errEl.style.display = 'block'; return }
 
   const obj = {
     negocio_id: profNegocioId,
@@ -495,11 +463,9 @@ async function saveProf() {
   await sb.from('profissional_servicos').delete().eq('profissional_id', profId)
   const checkedServicos = [...document.querySelectorAll('#pServicos .checkbox-item.checked input')]
     .map(inp => ({ profissional_id: profId, servico_id: inp.value }))
-  if (checkedServicos.length) {
-    await sb.from('profissional_servicos').insert(checkedServicos)
-  }
+  if (checkedServicos.length) await sb.from('profissional_servicos').insert(checkedServicos)
 
-  // Salvar horários com validação de sobreposição
+  // Salvar horários com validação
   const rows = document.querySelectorAll('#pHorarios .horario-row')
   const horarios = [...rows].map(row => ({
     profissional_id: profId,
@@ -514,7 +480,7 @@ async function saveProf() {
       if (a.dia_semana !== b.dia_semana) continue
       if (a.hora_inicio < b.hora_fim && b.hora_inicio < a.hora_fim) {
         const dia = a.dia_semana.charAt(0).toUpperCase() + a.dia_semana.slice(1)
-        alert(`Horários sobrepostos em ${dia}: ${a.hora_inicio}–${a.hora_fim} e ${b.hora_inicio}–${b.hora_fim}.\nCorrija antes de salvar.`)
+        alert(`Horários sobrepostos em ${dia}: ${a.hora_inicio}–${a.hora_fim} e ${b.hora_inicio}–${b.hora_fim}.`)
         return
       }
     }
@@ -547,7 +513,6 @@ function renderUsuarios(list) {
     cont.innerHTML = '<div class="empty-state">Nenhum usuário encontrado</div>'
     return
   }
-
   cont.innerHTML = list.map(u => `
     <div class="table-row">
       <div class="table-main">
@@ -569,10 +534,8 @@ async function showUsuarioForm() {
   document.getElementById('modalUsuarioSuccess').style.display = 'none'
   document.getElementById('btnSaveUsuario').disabled = false
   document.getElementById('btnSaveUsuario').textContent = 'Criar usuário'
-
   const sel = document.getElementById('uNegocio')
   sel.innerHTML = negocios.map(n => `<option value="${n.id}">${n.nome}</option>`).join('')
-
   document.getElementById('modalUsuario').style.display = 'flex'
 }
 
@@ -588,16 +551,8 @@ async function saveUsuario() {
   const negocioId = document.getElementById('uNegocio').value
   const role = document.getElementById('uRole').value
 
-  if (!email || !senha) {
-    errEl.textContent = 'Email e senha são obrigatórios'
-    errEl.style.display = 'block'
-    return
-  }
-  if (senha.length < 6) {
-    errEl.textContent = 'Senha deve ter no mínimo 6 caracteres'
-    errEl.style.display = 'block'
-    return
-  }
+  if (!email || !senha) { errEl.textContent = 'Email e senha são obrigatórios'; errEl.style.display = 'block'; return }
+  if (senha.length < 6) { errEl.textContent = 'Senha deve ter no mínimo 6 caracteres'; errEl.style.display = 'block'; return }
 
   btn.disabled = true
   btn.textContent = 'Criando...'
