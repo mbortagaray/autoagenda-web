@@ -9,6 +9,12 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 let negocios = []
 let editingNegocioId = null
 
+// Profissionais
+let profNegocioId = null
+let profissionais = []
+let servicos = []
+let editingProfId = null
+
 // ---- AUTH ----
 async function doLogin() {
   const email = document.getElementById('loginEmail').value
@@ -23,7 +29,6 @@ async function doLogin() {
     return
   }
 
-  // Verificar se é superadmin
   const { data: adminUser } = await sb
     .from('admin_users')
     .select('role')
@@ -58,7 +63,6 @@ async function checkSession() {
       return
     }
   }
-  // Não autenticado ou não é superadmin — mostra login
 }
 
 async function initSuperAdmin() {
@@ -75,6 +79,7 @@ function switchTab(tab) {
   document.querySelector(`[data-tab="${tab}"]`).classList.add('active')
   document.getElementById('mobileTitle').textContent = tab.charAt(0).toUpperCase() + tab.slice(1)
   if (tab === 'usuarios') loadUsuarios()
+  if (tab === 'profissionais') initProfissionaisTab()
 }
 
 function toggleSidebar() {
@@ -84,6 +89,7 @@ function toggleSidebar() {
 function closeModal(id) {
   document.getElementById(id).style.display = 'none'
   editingNegocioId = null
+  editingProfId = null
 }
 
 // ---- NEGÓCIOS ----
@@ -124,6 +130,7 @@ function renderNegocios(list) {
       <div class="table-actions">
         <span class="status-badge ${n.ativo ? 'active' : 'inactive'}">${n.ativo ? 'Ativo' : 'Inativo'}</span>
         <button class="btn btn-sm btn-ghost" onclick="editNegocio('${n.id}')">Editar</button>
+        <button class="btn btn-sm btn-ghost" onclick="gerenciarProfissionais('${n.id}')">Profissionais</button>
         <button class="btn btn-sm ${n.ativo ? 'btn-danger' : 'btn-primary'}" onclick="toggleNegocio('${n.id}', ${n.ativo})">
           ${n.ativo ? 'Desativar' : 'Ativar'}
         </button>
@@ -227,6 +234,304 @@ async function toggleNegocio(id, ativo) {
   await loadNegocios()
 }
 
+// ---- PROFISSIONAIS ----
+function gerenciarProfissionais(negocioId) {
+  switchTab('profissionais')
+  document.getElementById('profNegocioSelect').value = negocioId
+  loadProfissionaisDoNegocio(negocioId)
+}
+
+async function initProfissionaisTab() {
+  const sel = document.getElementById('profNegocioSelect')
+  sel.innerHTML = '<option value="">Selecione um negócio...</option>' +
+    negocios.map(n => `<option value="${n.id}">${n.nome}</option>`).join('')
+  document.getElementById('profissionaisContent').innerHTML = '<div class="empty-state">Selecione um negócio para ver os profissionais</div>'
+  profNegocioId = null
+  profissionais = []
+  servicos = []
+}
+
+async function onProfNegocioChange() {
+  const id = document.getElementById('profNegocioSelect').value
+  if (!id) {
+    document.getElementById('profissionaisContent').innerHTML = '<div class="empty-state">Selecione um negócio para ver os profissionais</div>'
+    profNegocioId = null
+    return
+  }
+  await loadProfissionaisDoNegocio(id)
+}
+
+async function loadProfissionaisDoNegocio(negocioId) {
+  profNegocioId = negocioId
+  document.getElementById('profissionaisContent').innerHTML = '<div class="empty-state">Carregando...</div>'
+
+  // Carregar serviços do negócio
+  const { data: svcs } = await sb
+    .from('servicos')
+    .select('*')
+    .eq('negocio_id', negocioId)
+    .order('nome')
+  servicos = svcs || []
+
+  // Carregar profissionais
+  const { data } = await sb
+    .from('profissionais')
+    .select('*, profissional_servicos(servico_id), profissional_horarios(id, dia_semana, hora_inicio, hora_fim)')
+    .eq('negocio_id', negocioId)
+    .order('nome')
+  profissionais = data || []
+  renderProfissionais()
+}
+
+function renderProfissionais() {
+  const container = document.getElementById('profissionaisContent')
+  if (!profissionais.length) {
+    container.innerHTML = '<div class="empty-state">Nenhum profissional cadastrado neste negócio</div>'
+    return
+  }
+  container.innerHTML = profissionais.map(p => {
+    const servNames = (p.profissional_servicos || [])
+      .map(ps => servicos.find(s => s.id === ps.servico_id)?.nome)
+      .filter(Boolean).join(', ')
+    const horariosCount = (p.profissional_horarios || []).length
+    return `
+      <div class="table-row">
+        <div style="font-size:24px;width:40px;text-align:center">${p.avatar_emoji || '👤'}</div>
+        <div class="table-main">
+          <div class="table-name">${p.nome} ${!p.ativo ? '<span style="color:#86868b">(inativo)</span>' : ''}</div>
+          <div class="table-sub">${servNames || 'Sem serviços'} &bull; ${horariosCount} horários</div>
+        </div>
+        <div class="table-actions">
+          <button class="btn btn-sm btn-ghost" onclick="editProf('${p.id}')">Editar</button>
+          <button class="btn btn-sm ${p.ativo ? 'btn-danger' : 'btn-primary'}" onclick="toggleProf('${p.id}', ${p.ativo})">${p.ativo ? 'Desativar' : 'Ativar'}</button>
+        </div>
+      </div>
+    `
+  }).join('')
+}
+
+function showProfForm() {
+  if (!profNegocioId) {
+    alert('Selecione um negócio primeiro')
+    return
+  }
+  editingProfId = null
+  document.getElementById('modalProfTitle').textContent = 'Novo Profissional'
+  document.getElementById('pNome').value = ''
+  document.getElementById('pTel').value = ''
+  document.getElementById('pEmoji').value = '👤'
+  document.getElementById('pCor').value = '#E8DDD0'
+  document.getElementById('pFoto').value = ''
+  document.getElementById('pFotoPreview').style.display = 'none'
+  document.getElementById('pFotoFile').value = ''
+  document.getElementById('pFotoName').textContent = ''
+
+  renderProfServicos([])
+  const defaultH = []
+  ;['seg','ter','qua','qui','sex','sab'].forEach(d => {
+    defaultH.push({ dia_semana: d, hora_inicio: '08:00', hora_fim: '12:00' })
+    defaultH.push({ dia_semana: d, hora_inicio: '13:00', hora_fim: '18:00' })
+  })
+  renderProfHorarios(defaultH)
+
+  document.getElementById('modalProfError').style.display = 'none'
+  document.getElementById('modalProf').style.display = 'flex'
+}
+
+function editProf(id) {
+  const p = profissionais.find(x => x.id === id)
+  if (!p) return
+  editingProfId = id
+  document.getElementById('modalProfTitle').textContent = 'Editar Profissional'
+  document.getElementById('pNome').value = p.nome || ''
+  document.getElementById('pTel').value = p.telefone || ''
+  document.getElementById('pEmoji').value = p.avatar_emoji || '👤'
+  document.getElementById('pCor').value = p.avatar_cor || '#E8DDD0'
+  document.getElementById('pFoto').value = p.foto_url || ''
+  document.getElementById('pFotoFile').value = ''
+  document.getElementById('pFotoName').textContent = ''
+
+  const preview = document.getElementById('pFotoPreview')
+  if (p.foto_url) {
+    preview.src = p.foto_url
+    preview.style.display = 'block'
+  } else {
+    preview.style.display = 'none'
+  }
+
+  const profServIds = (p.profissional_servicos || []).map(ps => ps.servico_id)
+  renderProfServicos(profServIds)
+  renderProfHorarios(p.profissional_horarios || [])
+
+  document.getElementById('modalProfError').style.display = 'none'
+  document.getElementById('modalProf').style.display = 'flex'
+}
+
+function renderProfServicos(selectedIds) {
+  const container = document.getElementById('pServicos')
+  if (!servicos.length) {
+    container.innerHTML = '<div style="color:#86868b;font-size:13px">Nenhum serviço cadastrado neste negócio</div>'
+    return
+  }
+  container.innerHTML = servicos.filter(s => s.ativo).map(s => `
+    <label class="checkbox-item ${selectedIds.includes(s.id) ? 'checked' : ''}" onclick="this.classList.toggle('checked')">
+      <input type="checkbox" value="${s.id}" ${selectedIds.includes(s.id) ? 'checked' : ''}>
+      ${s.nome}
+    </label>
+  `).join('')
+}
+
+function renderProfHorarios(horarios) {
+  const container = document.getElementById('pHorarios')
+  container.innerHTML = horarios.map((h, i) => `
+    <div class="horario-row">
+      <select data-h="${i}" data-field="dia">
+        ${['seg','ter','qua','qui','sex','sab','dom'].map(d =>
+          `<option value="${d}" ${h.dia_semana === d ? 'selected' : ''}>${d.charAt(0).toUpperCase()+d.slice(1)}</option>`
+        ).join('')}
+      </select>
+      <input type="time" data-h="${i}" data-field="inicio" value="${(h.hora_inicio||'').slice(0,5)}">
+      <span>até</span>
+      <input type="time" data-h="${i}" data-field="fim" value="${(h.hora_fim||'').slice(0,5)}">
+      <button class="btn-remove" onclick="this.parentElement.remove()">×</button>
+    </div>
+  `).join('')
+}
+
+function addHorarioRow() {
+  const container = document.getElementById('pHorarios')
+  const dias = ['seg','ter','qua','qui','sex','sab','dom']
+  const existentes = [...container.querySelectorAll('.horario-row')].map(row => ({
+    dia: row.querySelector('[data-field="dia"]').value,
+    inicio: row.querySelector('[data-field="inicio"]').value,
+  }))
+
+  let diaSugerido = 'seg', inicioSugerido = '08:00', fimSugerido = '12:00'
+  for (const dia of dias) {
+    const temManha = existentes.some(h => h.dia === dia && h.inicio < '12:00')
+    const temTarde = existentes.some(h => h.dia === dia && h.inicio >= '12:00')
+    if (!temManha) { diaSugerido = dia; inicioSugerido = '08:00'; fimSugerido = '12:00'; break }
+    if (!temTarde) { diaSugerido = dia; inicioSugerido = '13:00'; fimSugerido = '18:00'; break }
+  }
+
+  const i = container.children.length
+  container.insertAdjacentHTML('beforeend', `
+    <div class="horario-row">
+      <select data-h="${i}" data-field="dia">
+        ${dias.map(d =>
+          `<option value="${d}" ${d === diaSugerido ? 'selected' : ''}>${d.charAt(0).toUpperCase()+d.slice(1)}</option>`
+        ).join('')}
+      </select>
+      <input type="time" data-h="${i}" data-field="inicio" value="${inicioSugerido}">
+      <span>até</span>
+      <input type="time" data-h="${i}" data-field="fim" value="${fimSugerido}">
+      <button class="btn-remove" onclick="this.parentElement.remove()">×</button>
+    </div>
+  `)
+}
+
+function previewFoto(input) {
+  const file = input.files[0]
+  if (!file) return
+  const preview = document.getElementById('pFotoPreview')
+  const nameEl = document.getElementById('pFotoName')
+  preview.src = URL.createObjectURL(file)
+  preview.style.display = 'block'
+  nameEl.textContent = file.name
+}
+
+async function uploadFoto(profId) {
+  const fileInput = document.getElementById('pFotoFile')
+  const file = fileInput.files[0]
+  if (!file) return document.getElementById('pFoto').value || null
+
+  const ext = file.name.split('.').pop()
+  const path = `profissionais/${profId}.${ext}`
+
+  const { error } = await sb.storage.from('fotos').upload(path, file, {
+    upsert: true,
+    contentType: file.type,
+  })
+
+  if (error) return document.getElementById('pFoto').value || null
+
+  const { data } = sb.storage.from('fotos').getPublicUrl(path)
+  return data.publicUrl + '?t=' + Date.now()
+}
+
+async function saveProf() {
+  const errEl = document.getElementById('modalProfError')
+  errEl.style.display = 'none'
+
+  const nome = document.getElementById('pNome').value.trim()
+  if (!nome) {
+    errEl.textContent = 'Nome é obrigatório'
+    errEl.style.display = 'block'
+    return
+  }
+
+  const obj = {
+    negocio_id: profNegocioId,
+    nome,
+    telefone: document.getElementById('pTel').value.trim() || null,
+    avatar_emoji: document.getElementById('pEmoji').value,
+    avatar_cor: document.getElementById('pCor').value,
+    foto_url: document.getElementById('pFoto').value || null,
+  }
+
+  let profId = editingProfId
+  if (editingProfId) {
+    const fotoUrl = await uploadFoto(editingProfId)
+    if (fotoUrl) obj.foto_url = fotoUrl
+    await sb.from('profissionais').update(obj).eq('id', editingProfId)
+  } else {
+    const { data } = await sb.from('profissionais').insert(obj).select().single()
+    profId = data.id
+    const fotoUrl = await uploadFoto(profId)
+    if (fotoUrl) await sb.from('profissionais').update({ foto_url: fotoUrl }).eq('id', profId)
+  }
+
+  // Salvar serviços
+  await sb.from('profissional_servicos').delete().eq('profissional_id', profId)
+  const checkedServicos = [...document.querySelectorAll('#pServicos .checkbox-item.checked input')]
+    .map(inp => ({ profissional_id: profId, servico_id: inp.value }))
+  if (checkedServicos.length) {
+    await sb.from('profissional_servicos').insert(checkedServicos)
+  }
+
+  // Salvar horários com validação de sobreposição
+  const rows = document.querySelectorAll('#pHorarios .horario-row')
+  const horarios = [...rows].map(row => ({
+    profissional_id: profId,
+    dia_semana: row.querySelector('[data-field="dia"]').value,
+    hora_inicio: row.querySelector('[data-field="inicio"]').value,
+    hora_fim: row.querySelector('[data-field="fim"]').value,
+  }))
+
+  for (let i = 0; i < horarios.length; i++) {
+    for (let j = i + 1; j < horarios.length; j++) {
+      const a = horarios[i], b = horarios[j]
+      if (a.dia_semana !== b.dia_semana) continue
+      if (a.hora_inicio < b.hora_fim && b.hora_inicio < a.hora_fim) {
+        const dia = a.dia_semana.charAt(0).toUpperCase() + a.dia_semana.slice(1)
+        alert(`Horários sobrepostos em ${dia}: ${a.hora_inicio}–${a.hora_fim} e ${b.hora_inicio}–${b.hora_fim}.\nCorrija antes de salvar.`)
+        return
+      }
+    }
+  }
+
+  await sb.from('profissional_horarios').delete().eq('profissional_id', profId)
+  if (horarios.length) await sb.from('profissional_horarios').insert(horarios)
+
+  closeModal('modalProf')
+  await loadProfissionaisDoNegocio(profNegocioId)
+}
+
+async function toggleProf(id, ativo) {
+  await sb.from('profissionais').update({ ativo: !ativo }).eq('id', id)
+  await loadProfissionaisDoNegocio(profNegocioId)
+}
+
 // ---- USUÁRIOS ----
 async function loadUsuarios() {
   const { data } = await sb
@@ -265,7 +570,6 @@ async function showUsuarioForm() {
   document.getElementById('btnSaveUsuario').disabled = false
   document.getElementById('btnSaveUsuario').textContent = 'Criar usuário'
 
-  // Populate negócios select
   const sel = document.getElementById('uNegocio')
   sel.innerHTML = negocios.map(n => `<option value="${n.id}">${n.nome}</option>`).join('')
 
@@ -298,7 +602,6 @@ async function saveUsuario() {
   btn.disabled = true
   btn.textContent = 'Criando...'
 
-  // Criar usuário via Edge Function (precisa de service role)
   const res = await fetch(`${SUPABASE_URL}/functions/v1/criar-admin-user`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
