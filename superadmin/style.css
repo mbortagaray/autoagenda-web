@@ -95,7 +95,7 @@ body {
 .btn-danger:hover { opacity: 0.9; }
 
 /* LAYOUT */
-#superApp { min-height: 100vh; }
+#superApp { min-height: 100vh; display: flex; }
 
 .sidebar {
   position: fixed; left: 0; top: 0; bottom: 0;
