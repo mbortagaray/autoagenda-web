@@ -291,6 +291,8 @@ function renderDateContext() {
   document.getElementById('dateStepHint').textContent = `Escolha um horário para ${serv.nome}`
   document.getElementById('dateContextServico').textContent = serv.nome
   document.getElementById('dateContextDuracao').textContent = `${serv.duracao_min} min`
+  const profEl = document.getElementById('dateContextProf')
+  if (profEl) { profEl.textContent = prof?.nome || ''; profEl.style.display = prof ? 'inline' : 'none' }
   context.style.display = 'block'
 }
 
