@@ -290,6 +290,55 @@ body {
 .cal-day.selected::after { background: var(--cream); }
 .cal-day.today { border: 2px solid var(--rose); font-weight: 600; }
 
+/* Próximo dia disponível — destaque sutil */
+.cal-day.proximo {
+  background: color-mix(in srgb, var(--rose) 15%, transparent);
+  outline: 2px dashed var(--rose);
+  outline-offset: -2px;
+  font-weight: 600;
+}
+.cal-day.proximo::before {
+  content: '→';
+  position: absolute;
+  top: 1px;
+  right: 3px;
+  font-size: 8px;
+  color: var(--rose);
+  line-height: 1;
+}
+
+/* Dias com faixa diagonal */
+.cal-day.sem-horario,
+.cal-day.encerrado {
+  cursor: default;
+  overflow: hidden;
+  color: var(--sand);
+}
+.cal-ribbon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  font-size: 7px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  pointer-events: none;
+  padding: 1px 4px;
+  border-radius: 2px;
+  line-height: 1.4;
+}
+.cal-day.sem-horario .cal-ribbon {
+  color: var(--sand);
+  background: color-mix(in srgb, var(--sand) 20%, transparent);
+}
+.cal-day.encerrado .cal-ribbon {
+  color: var(--rose);
+  background: color-mix(in srgb, var(--rose) 15%, transparent);
+}
+.cal-day.encerrado { color: var(--sand); }
+
 /* HORARIOS */
 .slots-section { margin-top: 20px; }
 .slots-label {

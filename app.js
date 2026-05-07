@@ -41,7 +41,8 @@ let state = {
   mesAtual: new Date(),
   slotsData: null,
   clienteEncontrado: false,
-  dataAutoSelecionada: false,
+  proximaData: null,
+  hojeEncerrado: false,
 }
 
 // ---- API CALLS ----
@@ -300,9 +301,9 @@ function renderCal() {
   document.getElementById('calMonthLabel').textContent = MESES[mes] + ' ' + ano
 
   const grid = document.getElementById('calGrid')
+  const agora = new Date()
   const hoje = new Date(); hoje.setHours(0,0,0,0)
-  const primeiroDiaSemana = new Date(ano, mes, 1).getDay()
-  const primeiroDia = primeiroDiaSemana // dom=0, seg=1, ..., sab=6
+  const primeiroDia = new Date(ano, mes, 1).getDay()
 
   const diasNoMes = new Date(ano, mes+1, 0).getDate()
   const diasAtendimento = getProfDiasAtendimento()
@@ -317,16 +318,34 @@ function renderCal() {
     const isAtendimento = diasAtendimento.includes(diaSemana)
     const isToday = data.toDateString() === hoje.toDateString()
     const dateStr = `${ano}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
-    const isSelected = state.data === dateStr && !state.dataAutoSelecionada
+    const isSelected = state.data === dateStr
+    const isProximo = state.proximaData === dateStr
+
+    // Dia de hoje com expediente encerrado (hora atual >= fim do expediente ou sem slots)
+    const isTodayEncerrado = isToday && isAtendimento && state.hojeEncerrado
 
     let cls = 'cal-day'
-    if (isPast || !isAtendimento) cls += ' past'
-    else cls += ' available has-slots'
-    if (isToday) cls += ' today'
-    if (isSelected) cls += ' selected'
+    let faixa = ''
 
-    const click = (!isPast && isAtendimento) ? `onclick="selectData('${dateStr}')"` : ''
-    html += `<div class="${cls}" ${click}>${d}</div>`
+    if (isPast) {
+      cls += ' past'
+    } else if (!isAtendimento) {
+      cls += ' sem-horario'
+      faixa = `<span class="cal-ribbon">Sem horário</span>`
+    } else if (isTodayEncerrado) {
+      cls += ' encerrado'
+      faixa = `<span class="cal-ribbon">Encerrado</span>`
+    } else {
+      cls += ' available has-slots'
+    }
+
+    if (isToday && !isPast) cls += ' today'
+    if (isSelected) cls += ' selected'
+    if (isProximo && !isSelected) cls += ' proximo'
+
+    const clickable = !isPast && isAtendimento && !isTodayEncerrado
+    const click = clickable ? `onclick="selectData('${dateStr}')"` : ''
+    html += `<div class="${cls}" ${click}>${d}${faixa}</div>`
   }
   grid.innerHTML = html
 }
@@ -345,6 +364,7 @@ async function findInitialAvailableDate() {
   const serv = config.servicos.find(s => s.id === state.servico)
   const date = new Date()
   date.setHours(0, 0, 0, 0)
+  const todayStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`
 
   for (let i = 0; i < 45; i++) {
     const diaSemana = DIAS_MAP[date.getDay()]
@@ -356,7 +376,12 @@ async function findInitialAvailableDate() {
       const slotsData = await fetchHorarios(state.profissional, dateStr, serv.duracao_min)
 
       if (hasAvailableSlots(slotsData)) {
+        // Se o primeiro dia com slots for amanhã ou depois, hoje está encerrado
+        if (dateStr !== todayStr) state.hojeEncerrado = true
         return { dateStr, slotsData }
+      } else if (dateStr === todayStr) {
+        // Hoje é dia de atendimento mas sem slots → expediente encerrado
+        state.hojeEncerrado = true
       }
     }
     date.setDate(date.getDate() + 1)
@@ -367,7 +392,6 @@ async function findInitialAvailableDate() {
 
 async function selectData(dateStr, options = {}) {
   state.data = dateStr
-  state.dataAutoSelecionada = !!options.auto
   state.hora = null
   document.getElementById('btnStep3').disabled = true
   renderCal()
@@ -653,22 +677,37 @@ function goStep(n) {
   }
   if (n === 3) {
     renderDateContext()
+    // Reset ao entrar: nenhum dia selecionado, horários ocultos
+    state.data = null
+    state.hora = null
+    state.slotsData = null
+    state.proximaData = null
+    state.hojeEncerrado = false
+    document.getElementById('slotsWrap').style.display = 'none'
+    document.getElementById('btnStep3').disabled = true
     renderCal()
-    if (!state.data) {
-      showInitialDateLoading()
-      findInitialAvailableDate()
-        .then(result => {
-          if (result) {
-            selectData(result.dateStr, { auto: true, slotsData: result.slotsData })
-            return
+    // Busca próximo disponível apenas para destacar (não seleciona)
+    showInitialDateLoading()
+    findInitialAvailableDate()
+      .then(result => {
+        document.getElementById('slotsWrap').style.display = 'none'
+        if (result) {
+          state.proximaData = result.dateStr
+          // Rola para o mês do próximo disponível se for diferente do atual
+          const [pAno, pMes] = result.dateStr.split('-').map(Number)
+          const mAtual = state.mesAtual
+          if (pAno !== mAtual.getFullYear() || pMes !== mAtual.getMonth() + 1) {
+            state.mesAtual = new Date(pAno, pMes - 1, 1)
           }
+        } else {
           showNoInitialAvailability()
-        })
-        .catch(showNoInitialAvailability)
-      return
-    }
-    document.getElementById('slotsWrap').style.display = state.data ? 'block' : 'none'
-    if (state.data && state.slotsData) renderSlots()
+        }
+        renderCal()
+      })
+      .catch(() => {
+        document.getElementById('slotsWrap').style.display = 'none'
+        renderCal()
+      })
   }
   if (n === 5) document.getElementById('resumoCard').innerHTML = buildResumoHTML()
   window.scrollTo(0, 0)
@@ -717,9 +756,10 @@ function getVisibleProgressSteps() {
 }
 
 function showInitialDateLoading() {
+  // Mostra um spinner discreto abaixo do calendário sem abrir o painel de slots
   const slotsWrap = document.getElementById('slotsWrap')
   slotsWrap.style.display = 'block'
-  slotsWrap.innerHTML = '<div class="loading"><div class="spinner"></div>Buscando próximo horário disponível...</div>'
+  slotsWrap.innerHTML = '<div class="loading" style="padding:12px 0"><div class="spinner"></div>Verificando disponibilidade...</div>'
 }
 
 function showNoInitialAvailability() {
@@ -751,7 +791,7 @@ function goBackFromDate() {
 }
 
 function reiniciar() {
-  state = { servico: null, profissional: null, data: null, hora: null, nome: '', tel: '', pin: '', mesAtual: new Date(), slotsData: null, clienteEncontrado: false, dataAutoSelecionada: false }
+  state = { servico: null, profissional: null, data: null, hora: null, nome: '', tel: '', pin: '', mesAtual: new Date(), slotsData: null, clienteEncontrado: false, proximaData: null, hojeEncerrado: false }
   document.getElementById('inputNome').value = ''
   document.getElementById('inputTel').value = ''
   document.getElementById('clienteFeedback').textContent = ''
