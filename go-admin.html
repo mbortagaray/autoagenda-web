@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Redirecionando...</title>
+</head>
+<body>
+  <p>Redirecionando para o painel admin...</p>
+  <script>
+    // Pega todos os parâmetros do hash (#) e query string
+    const hash = window.location.hash.substring(1)
+    const query = window.location.search.substring(1)
+    const params = hash || query
+
+    if (params) {
+      // Redireciona para o admin mantendo os tokens
+      window.location.replace('https://agenda-admin.mdinamic.com.br/?' + params + '#' + params + '&impersonating=true')
+    } else {
+      window.location.replace('https://agenda-admin.mdinamic.com.br')
+    }
+  </script>
+</body>
+</html>
