@@ -1,1 +1,5 @@
 recovered-*/
+_backup_local_before_github_*/
+supabase/.env
+supabase/.branches
+supabase/.temp
