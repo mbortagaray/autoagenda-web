@@ -1,24 +1,24 @@
 {
-  "rewrites": [
-    {
-      "source": "/superadmin",
-      "destination": "/superadmin/index.html"
-    },
-    {
-      "source": "/go-admin",
-      "destination": "/go-admin.html"
-    },
-    {
-      "source": "/admin",
-      "destination": "/admin/index.html"
-    },
-    {
-      "source": "/admin/((?!.*\\.).*)",
-      "destination": "/admin/index.html"
-    },
-    {
-      "source": "/((?!superadmin|admin|go-admin)(?!.*\\.).*)",
-      "destination": "/index.html"
-    }
-  ]
+    "rewrites":  [
+                     {
+                         "source":  "/superadmin",
+                         "destination":  "/superadmin/index.html"
+                     },
+                     {
+                         "source":  "/go-admin",
+                         "destination":  "/go-admin.html"
+                     },
+                     {
+                         "source":  "/admin",
+                         "destination":  "/admin/index.html"
+                     },
+                     {
+                         "source":  "/admin/((?!.*\\.).*)",
+                         "destination":  "/admin/index.html"
+                     },
+                     {
+                         "source":  "/((?!superadmin|admin|go-admin)(?!.*\\.).*)",
+                         "destination":  "/index.html"
+                     }
+                 ]
 }
