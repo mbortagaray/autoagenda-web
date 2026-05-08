@@ -580,3 +580,91 @@ body {
   text-align: center; margin-top: 16px;
   font-size: 12px; color: var(--text-muted);
 }
+
+.consulta-panel {
+  background: var(--white);
+  border: 1px solid var(--sand);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow-md);
+}
+.consulta-panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.consulta-kicker {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 3px;
+}
+.consulta-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--brown);
+}
+.consulta-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+.consulta-date-nav {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.consulta-date-nav button {
+  border: 1px solid var(--sand);
+  background: var(--cream);
+  color: var(--brown-light);
+  border-radius: 10px;
+  padding: 9px 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+}
+.agenda-prof-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.agenda-prof-card {
+  display: grid;
+  grid-template-columns: 58px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--sand);
+  border-radius: 12px;
+  padding: 12px;
+  background: #FDF8F5;
+}
+.agenda-prof-time {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--rose-dark);
+}
+.agenda-prof-service {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.agenda-prof-client {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.agenda-prof-status {
+  font-size: 10px;
+  color: var(--success);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.consulta-empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 22px 8px;
+}

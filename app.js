@@ -98,6 +98,25 @@ async function buscarMeusAgendamentos(telefone) {
   return res.json()
 }
 
+async function buscarAgendaProfissional(telefone, data) {
+  const tel = telefone.replace(/\D/g, '')
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_profissional_agenda`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({
+      p_negocio_id: config.negocio.id,
+      p_telefone: tel,
+      p_data: data,
+    }),
+  })
+  if (!res.ok) throw new Error('Erro ao buscar agenda do profissional')
+  return res.json()
+}
+
 // ---- INIT ----
 async function init() {
   showLoading(true)
@@ -534,6 +553,17 @@ function checkStep4() {
 }
 
 // ---- MEUS AGENDAMENTOS ----
+let consultaData = new Date()
+
+function getConsultaDateStr() {
+  return `${consultaData.getFullYear()}-${String(consultaData.getMonth()+1).padStart(2,'0')}-${String(consultaData.getDate()).padStart(2,'0')}`
+}
+
+function formatDateBR(dateStr) {
+  const [ano, mes, dia] = dateStr.split('-')
+  return `${dia}/${mes}/${ano}`
+}
+
 async function showMeusAgendamentos() {
   const container = document.getElementById('meusAgendamentosContent')
   const telInput = document.getElementById('inputTelConsulta')
@@ -547,6 +577,12 @@ async function showMeusAgendamentos() {
   container.innerHTML = '<div class="loading"><div class="spinner"></div>Buscando...</div>'
 
   try {
+    const agendaProfissional = await buscarAgendaProfissional(telInput.value, getConsultaDateStr())
+    if (agendaProfissional?.profissional) {
+      renderAgendaProfissional(agendaProfissional)
+      return
+    }
+
     const result = await buscarMeusAgendamentos(telInput.value)
 
     if (!result.agendamentos || result.agendamentos.length === 0) {
@@ -555,12 +591,12 @@ async function showMeusAgendamentos() {
     }
 
     container.innerHTML = result.agendamentos.map(ag => {
-      const [ano, mes, dia] = ag.data.split('-')
+      const dataFmt = formatDateBR(ag.data)
       return `
         <div class="resumo-card" style="margin-bottom:10px">
           <div class="resumo-row"><span class="resumo-label">Serviço</span><span class="resumo-value">${ag.servico}</span></div>
           <div class="resumo-row"><span class="resumo-label">Profissional</span><span class="resumo-value">${ag.profissional}</span></div>
-          <div class="resumo-row"><span class="resumo-label">Data</span><span class="resumo-value">${dia}/${mes}/${ano}</span></div>
+          <div class="resumo-row"><span class="resumo-label">Data</span><span class="resumo-value">${dataFmt}</span></div>
           <div class="resumo-row"><span class="resumo-label">Horário</span><span class="resumo-value">${ag.hora?.substring(0,5)}</span></div>
         </div>
       `
@@ -568,6 +604,56 @@ async function showMeusAgendamentos() {
   } catch (e) {
     container.innerHTML = '<div style="color:#8B3A3A;text-align:center;padding:12px">Erro ao buscar agendamentos</div>'
   }
+}
+
+function changeConsultaDay(delta) {
+  consultaData.setDate(consultaData.getDate() + delta)
+  showMeusAgendamentos()
+}
+
+function renderAgendaProfissional(result) {
+  const container = document.getElementById('meusAgendamentosContent')
+  const dataStr = result.data || getConsultaDateStr()
+  const agendamentos = result.agendamentos || []
+  const countLabel = agendamentos.length === 1 ? '1 horario' : `${agendamentos.length} horarios`
+
+  const cards = agendamentos.length
+    ? agendamentos.map(ag => `
+      <div class="agenda-prof-card">
+        <div class="agenda-prof-time">${ag.hora?.substring(0,5)}</div>
+        <div class="agenda-prof-main">
+          <div class="agenda-prof-service">${ag.servico}</div>
+          <div class="agenda-prof-client">${ag.cliente_nome} &bull; ${formatPhone(ag.cliente_telefone)}</div>
+        </div>
+        <span class="agenda-prof-status">${ag.status}</span>
+      </div>
+    `).join('')
+    : '<div class="consulta-empty">Nenhum horario nesta data</div>'
+
+  container.innerHTML = `
+    <div class="consulta-panel">
+      <div class="consulta-panel-head">
+        <div>
+          <div class="consulta-kicker">Agenda profissional</div>
+          <div class="consulta-title">${result.profissional.nome}</div>
+          <div class="consulta-sub">${formatDateBR(dataStr)} &bull; ${countLabel}</div>
+        </div>
+      </div>
+      <div class="consulta-date-nav">
+        <button type="button" onclick="changeConsultaDay(-1)">&larr; Dia anterior</button>
+        <button type="button" onclick="consultaData = new Date(); showMeusAgendamentos()">Hoje</button>
+        <button type="button" onclick="changeConsultaDay(1)">Proximo dia &rarr;</button>
+      </div>
+      <div class="agenda-prof-list">${cards}</div>
+    </div>
+  `
+}
+
+function formatPhone(value) {
+  const digits = String(value || '').replace(/\D/g, '')
+  if (digits.length === 11) return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7)}`
+  if (digits.length === 10) return `(${digits.slice(0,2)}) ${digits.slice(2,6)}-${digits.slice(6)}`
+  return value || ''
 }
 
 // ---- STEP 5: RESUMO ----
@@ -770,6 +856,7 @@ function goConsulta() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
   document.getElementById('stepConsulta').classList.add('active')
   updateProgress('consulta')
+  consultaData = new Date()
   window.scrollTo(0, 0)
 }
 
