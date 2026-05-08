@@ -10,10 +10,32 @@ if (hasImpersonationParam()) {
   sessionStorage.setItem(IMPERSONATION_STORAGE_KEY, 'true')
 }
 
-document.addEventListener('click', (event) => {
-  if (event.target.closest('.impersonation-exit')) {
-    sessionStorage.removeItem(IMPERSONATION_STORAGE_KEY)
+async function sairImpersonationPreservandoSuperadmin() {
+  sessionStorage.removeItem(IMPERSONATION_STORAGE_KEY)
+
+  const backupRaw = localStorage.getItem('autoagenda_superadmin_session_backup')
+  if (backupRaw && window.sb?.auth) {
+    try {
+      const backup = JSON.parse(backupRaw)
+      if (backup.access_token && backup.refresh_token) {
+        await sb.auth.setSession({
+          access_token: backup.access_token,
+          refresh_token: backup.refresh_token,
+        })
+      }
+    } catch (error) {
+      console.error('Erro ao restaurar sessão do superadmin:', error)
+    }
   }
+
+  window.location.href = 'https://agenda.mdinamic.com.br/superadmin'
+}
+
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.impersonation-exit')) return
+  event.preventDefault()
+  event.stopImmediatePropagation()
+  sairImpersonationPreservandoSuperadmin()
 }, true)
 
 document.addEventListener('DOMContentLoaded', () => {
