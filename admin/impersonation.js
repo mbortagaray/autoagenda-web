@@ -28,7 +28,10 @@ async function sairImpersonationPreservandoSuperadmin() {
     }
   }
 
-  window.location.href = 'https://agenda.mdinamic.com.br/superadmin'
+  window.close()
+  setTimeout(() => {
+    window.location.href = 'https://agenda.mdinamic.com.br/superadmin'
+  }, 150)
 }
 
 document.addEventListener('click', (event) => {
