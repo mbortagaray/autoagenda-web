@@ -241,6 +241,14 @@ async function entrarComoAdmin(negocioId) {
     alert('Erro: ' + (result.error || 'Nao foi possivel entrar como admin'))
     return
   }
+  if (session?.access_token && session?.refresh_token) {
+    localStorage.setItem('autoagenda_superadmin_session_backup', JSON.stringify({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+      expires_at: session.expires_at,
+      token_type: session.token_type,
+    }))
+  }
   window.open(result.url, '_blank')
 }
 
