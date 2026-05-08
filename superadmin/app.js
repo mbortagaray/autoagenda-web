@@ -127,6 +127,7 @@ function renderNegocios(list) {
         <span class="status-badge ${n.ativo ? 'active' : 'inactive'}">${n.ativo ? 'Ativo' : 'Inativo'}</span>
         <button class="btn btn-sm btn-ghost" onclick="editNegocio('${n.id}')">Editar</button>
         <button class="btn btn-sm btn-ghost" onclick="gerenciarProfissionais('${n.id}')">Profissionais</button>
+        <button class="btn btn-sm btn-accent" onclick="entrarComoAdmin('${n.id}')">⚡ Entrar como admin</button>
         <button class="btn btn-sm ${n.ativo ? 'btn-danger' : 'btn-primary'}" onclick="toggleNegocio('${n.id}', ${n.ativo})">
           ${n.ativo ? 'Desativar' : 'Ativar'}
         </button>
@@ -223,6 +224,24 @@ async function toggleNegocio(id, ativo) {
   if (!confirm(`Deseja ${acao} este negócio?`)) return
   await sb.from('negocios').update({ ativo: !ativo }).eq('id', id)
   await loadNegocios()
+}
+
+async function entrarComoAdmin(negocioId) {
+  const { data: { session } } = await sb.auth.getSession()
+  const res = await fetch(SUPABASE_URL + '/functions/v1/impersonate-tenant', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + session.access_token
+    },
+    body: JSON.stringify({ negocio_id: negocioId })
+  })
+  const result = await res.json()
+  if (!res.ok || result.error) {
+    alert('Erro: ' + (result.error || 'Nao foi possivel entrar como admin'))
+    return
+  }
+  window.open(result.url, '_blank')
 }
 
 // ---- PROFISSIONAIS ----

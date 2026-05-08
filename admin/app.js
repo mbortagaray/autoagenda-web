@@ -596,3 +596,31 @@ function closeModal(id) {
 
 // ============ INIT ============
 checkAuth()
+
+// ============ IMPERSONATION ============
+function checkImpersonation() {
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('impersonating') === 'true') {
+    const banner = document.getElementById('impersonationBanner')
+    if (banner) {
+      banner.style.display = 'flex'
+      // Adicionar padding no body para o banner
+      document.body.style.paddingTop = '44px'
+      // Preencher nome do negócio quando carregar
+      const interval = setInterval(() => {
+        if (negocio?.nome) {
+          document.getElementById('impersonationNome').textContent = negocio.nome
+          clearInterval(interval)
+        }
+      }, 500)
+    }
+  }
+}
+
+function sairImpersonation() {
+  sb.auth.signOut().then(() => {
+    window.location.href = 'https://agenda.mdinamic.com.br/superadmin'
+  })
+}
+
+document.addEventListener('DOMContentLoaded', checkImpersonation)

@@ -392,3 +392,7 @@ body {
   border-radius: 4px;
 }
 .btn-remove:hover { background: #fff0f0; }
+
+/* Botão entrar como admin */
+.btn-accent { background: #1a73e8; color: white; border: none; }
+.btn-accent:hover { background: #1557b0; }

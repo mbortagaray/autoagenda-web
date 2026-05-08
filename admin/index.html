@@ -10,6 +10,12 @@
 </head>
 <body>
 
+<!-- BANNER IMPERSONATION -->
+<div id="impersonationBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#1a73e8;color:white;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-size:13px">
+  <span>⚡ Você está acessando como <strong id="impersonationNome"></strong> — modo superadmin</span>
+  <button onclick="sairImpersonation()" style="background:rgba(255,255,255,0.2);border:none;color:white;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px">✕ Sair</button>
+</div>
+
 <!-- LOGIN -->
 <div id="loginScreen" class="login-screen">
   <div class="login-card">
