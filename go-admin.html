@@ -7,14 +7,14 @@
 <body>
   <p>Redirecionando para o painel admin...</p>
   <script>
-    // Pega todos os parâmetros do hash (#) e query string
+    // O Supabase coloca os tokens no hash (#access_token=...)
     const hash = window.location.hash.substring(1)
     const query = window.location.search.substring(1)
     const params = hash || query
 
     if (params) {
-      // Redireciona para o admin mantendo os tokens
-      window.location.replace('https://agenda-admin.mdinamic.com.br/?' + params + '#' + params + '&impersonating=true')
+      // Redireciona para o admin com os tokens no hash
+      window.location.replace('https://agenda-admin.mdinamic.com.br/#' + params + '&impersonating=true')
     } else {
       window.location.replace('https://agenda-admin.mdinamic.com.br')
     }
