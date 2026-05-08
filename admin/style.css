@@ -25,6 +25,40 @@ body {
   min-height: 100vh;
 }
 
+/* IMPERSONATION */
+.impersonation-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  min-height: 44px;
+  background: #1a73e8;
+  color: white;
+  padding: 10px 20px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.impersonation-exit {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.impersonation-exit:hover { background: rgba(255,255,255,0.3); }
+
+body.is-impersonating .sidebar { padding-top: 44px; }
+body.is-impersonating .content { padding-top: 70px; }
+
 /* LOGIN */
 .login-screen {
   min-height: 100vh; display: flex; align-items: center; justify-content: center;
@@ -144,6 +178,8 @@ body {
   .sidebar.open { transform: translateX(0); }
   .mobile-header { display: flex; }
   .content { margin-left: 0; padding: 70px 16px 24px; }
+  body.is-impersonating .mobile-header { top: 44px; }
+  body.is-impersonating .content { padding-top: 114px; }
 }
 
 /* TABS */
