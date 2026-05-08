@@ -576,9 +576,13 @@ async function saveUsuario() {
   btn.disabled = true
   btn.textContent = 'Criando...'
 
+  const { data: { session } } = await sb.auth.getSession()
   const res = await fetch(`${SUPABASE_URL}/functions/v1/criar-admin-user`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`
+    },
     body: JSON.stringify({ email, senha, negocio_id: negocioId, role }),
   })
   const result = await res.json()
