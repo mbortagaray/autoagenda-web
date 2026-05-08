@@ -11,7 +11,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verificar que quem chama é superadmin
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Não autorizado' }), { status: 401, headers: corsHeaders })
@@ -22,13 +21,12 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    // Verificar o usuário que está chamando
+    // Verificar se é superadmin
     const { data: { user }, error: userError } = await sb.auth.getUser(authHeader.replace('Bearer ', ''))
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Token inválido' }), { status: 401, headers: corsHeaders })
     }
 
-    // Verificar se é superadmin
     const { data: adminUser } = await sb
       .from('admin_users')
       .select('role')
@@ -39,7 +37,6 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Acesso negado' }), { status: 403, headers: corsHeaders })
     }
 
-    // Buscar negocio_id do body
     const { negocio_id } = await req.json()
     if (!negocio_id) {
       return new Response(JSON.stringify({ error: 'negocio_id obrigatório' }), { status: 400, headers: corsHeaders })
@@ -57,27 +54,28 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Owner não encontrado para este negócio' }), { status: 404, headers: corsHeaders })
     }
 
-    // Buscar email do owner
-    const { data: { user: ownerUser } } = await sb.auth.admin.getUserById(owner.user_id)
-    if (!ownerUser?.email) {
+    // Gerar link mágico e substituir o redirect manualmente
+    const { data: ownerUserData } = await sb.auth.admin.getUserById(owner.user_id)
+    const ownerEmail = ownerUserData?.user?.email
+    if (!ownerEmail) {
       return new Response(JSON.stringify({ error: 'Email do owner não encontrado' }), { status: 404, headers: corsHeaders })
     }
 
-    // Gerar link mágico para o owner
     const { data, error } = await sb.auth.admin.generateLink({
       type: 'magiclink',
-      email: ownerUser.email,
-      options: {
-        redirectTo: 'https://agenda-admin.mdinamic.com.br?impersonating=true'
-      }
+      email: ownerEmail,
     })
 
     if (error) {
       return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
 
+    // Substituir o redirect_to no link gerado para apontar para o admin
+    const originalUrl = new URL(data.properties.action_link)
+    originalUrl.searchParams.set('redirect_to', 'https://agenda-admin.mdinamic.com.br?impersonating=true')
+    
     return new Response(
-      JSON.stringify({ url: data.properties.action_link }),
+      JSON.stringify({ url: originalUrl.toString() }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
