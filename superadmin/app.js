@@ -377,8 +377,8 @@ function renderProfServicos(selectedIds) {
     return
   }
   container.innerHTML = servicos.map(s => `
-    <label class="checkbox-item ${selectedIds.includes(s.id) ? 'checked' : ''}" onclick="this.classList.toggle('checked')">
-      <input type="checkbox" value="${s.id}" ${selectedIds.includes(s.id) ? 'checked' : ''}>
+    <label class="checkbox-item ${selectedIds.includes(s.id) ? 'checked' : ''}">
+      <input type="checkbox" value="${s.id}" ${selectedIds.includes(s.id) ? 'checked' : ''} onchange="this.closest('.checkbox-item').classList.toggle('checked', this.checked)">
       ${s.nome}
     </label>
   `).join('')
@@ -473,19 +473,29 @@ async function saveProf() {
   if (editingProfId) {
     const fotoUrl = await uploadFoto(editingProfId)
     if (fotoUrl) obj.foto_url = fotoUrl
-    await sb.from('profissionais').update(obj).eq('id', editingProfId)
+    const { error } = await sb.from('profissionais').update(obj).eq('id', editingProfId)
+    if (error) return showProfSaveError(error.message)
   } else {
-    const { data } = await sb.from('profissionais').insert(obj).select().single()
+    const { data, error } = await sb.from('profissionais').insert(obj).select().single()
+    if (error) return showProfSaveError(error.message)
     profId = data.id
     const fotoUrl = await uploadFoto(profId)
-    if (fotoUrl) await sb.from('profissionais').update({ foto_url: fotoUrl }).eq('id', profId)
+    if (fotoUrl) {
+      const { error } = await sb.from('profissionais').update({ foto_url: fotoUrl }).eq('id', profId)
+      if (error) return showProfSaveError(error.message)
+    }
   }
 
   // Salvar serviços
-  await sb.from('profissional_servicos').delete().eq('profissional_id', profId)
-  const checkedServicos = [...document.querySelectorAll('#pServicos .checkbox-item.checked input')]
+  const { error: deleteServicosError } = await sb.from('profissional_servicos').delete().eq('profissional_id', profId)
+  if (deleteServicosError) return showProfSaveError(deleteServicosError.message)
+
+  const checkedServicos = [...document.querySelectorAll('#pServicos input:checked')]
     .map(inp => ({ profissional_id: profId, servico_id: inp.value }))
-  if (checkedServicos.length) await sb.from('profissional_servicos').insert(checkedServicos)
+  if (checkedServicos.length) {
+    const { error: insertServicosError } = await sb.from('profissional_servicos').insert(checkedServicos)
+    if (insertServicosError) return showProfSaveError(insertServicosError.message)
+  }
 
   // Salvar horários com validação
   const rows = document.querySelectorAll('#pHorarios .horario-row')
@@ -508,11 +518,21 @@ async function saveProf() {
     }
   }
 
-  await sb.from('profissional_horarios').delete().eq('profissional_id', profId)
-  if (horarios.length) await sb.from('profissional_horarios').insert(horarios)
+  const { error: deleteHorariosError } = await sb.from('profissional_horarios').delete().eq('profissional_id', profId)
+  if (deleteHorariosError) return showProfSaveError(deleteHorariosError.message)
+  if (horarios.length) {
+    const { error: insertHorariosError } = await sb.from('profissional_horarios').insert(horarios)
+    if (insertHorariosError) return showProfSaveError(insertHorariosError.message)
+  }
 
   closeModal('modalProf')
   await loadProfissionaisDoNegocio(profNegocioId)
+}
+
+function showProfSaveError(message) {
+  const errEl = document.getElementById('modalProfError')
+  errEl.textContent = 'Erro ao salvar profissional: ' + message
+  errEl.style.display = 'block'
 }
 
 async function toggleProf(id, ativo) {

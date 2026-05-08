@@ -290,8 +290,8 @@ function showProfForm(id) {
   const checkboxGrid = document.getElementById('pServicos')
   const profServIds = id ? (profissionais.find(p => p.id === id)?.profissional_servicos || []).map(ps => ps.servico_id) : []
   checkboxGrid.innerHTML = servicos.filter(s => s.ativo).map(s => `
-    <label class="checkbox-item ${profServIds.includes(s.id) ? 'checked' : ''}" onclick="this.classList.toggle('checked')">
-      <input type="checkbox" value="${s.id}" ${profServIds.includes(s.id) ? 'checked' : ''}>
+    <label class="checkbox-item ${profServIds.includes(s.id) ? 'checked' : ''}">
+      <input type="checkbox" value="${s.id}" ${profServIds.includes(s.id) ? 'checked' : ''} onchange="this.closest('.checkbox-item').classList.toggle('checked', this.checked)">
       ${s.nome}
     </label>
   `).join('')
@@ -423,6 +423,9 @@ async function uploadFoto(profId) {
 }
 
 async function saveProf() {
+  const modalError = document.getElementById('modalProfError')
+  if (modalError) modalError.style.display = 'none'
+
   const obj = {
     negocio_id: negocioId,
     nome: document.getElementById('pNome').value,
@@ -437,23 +440,29 @@ async function saveProf() {
     // Upload foto if new file selected
     const fotoUrl = await uploadFoto(editingId)
     if (fotoUrl) obj.foto_url = fotoUrl
-    await sb.from('profissionais').update(obj).eq('id', editingId)
+    const { error } = await sb.from('profissionais').update(obj).eq('id', editingId)
+    if (error) return showProfSaveError(error.message)
   } else {
-    const { data } = await sb.from('profissionais').insert(obj).select().single()
+    const { data, error } = await sb.from('profissionais').insert(obj).select().single()
+    if (error) return showProfSaveError(error.message)
     profId = data.id
     // Upload foto for new prof
     const fotoUrl = await uploadFoto(profId)
     if (fotoUrl) {
-      await sb.from('profissionais').update({ foto_url: fotoUrl }).eq('id', profId)
+      const { error } = await sb.from('profissionais').update({ foto_url: fotoUrl }).eq('id', profId)
+      if (error) return showProfSaveError(error.message)
     }
   }
 
   // Save servicos (delete + reinsert)
-  await sb.from('profissional_servicos').delete().eq('profissional_id', profId)
-  const checkedServicos = [...document.querySelectorAll('#pServicos .checkbox-item.checked input')]
+  const { error: deleteServicosError } = await sb.from('profissional_servicos').delete().eq('profissional_id', profId)
+  if (deleteServicosError) return showProfSaveError(deleteServicosError.message)
+
+  const checkedServicos = [...document.querySelectorAll('#pServicos input:checked')]
     .map(inp => ({ profissional_id: profId, servico_id: inp.value }))
   if (checkedServicos.length) {
-    await sb.from('profissional_servicos').insert(checkedServicos)
+    const { error: insertServicosError } = await sb.from('profissional_servicos').insert(checkedServicos)
+    if (insertServicosError) return showProfSaveError(insertServicosError.message)
   }
 
   // Save horarios (delete + reinsert) — valida sobreposições antes
@@ -481,14 +490,26 @@ async function saveProf() {
     }
   }
 
-  await sb.from('profissional_horarios').delete().eq('profissional_id', profId)
+  const { error: deleteHorariosError } = await sb.from('profissional_horarios').delete().eq('profissional_id', profId)
+  if (deleteHorariosError) return showProfSaveError(deleteHorariosError.message)
   if (horarios.length) {
-    await sb.from('profissional_horarios').insert(horarios)
+    const { error: insertHorariosError } = await sb.from('profissional_horarios').insert(horarios)
+    if (insertHorariosError) return showProfSaveError(insertHorariosError.message)
   }
 
   closeModal('modalProf')
   await loadProfissionais()
   loadAgendaProfFilter()
+}
+
+function showProfSaveError(message) {
+  const modalError = document.getElementById('modalProfError')
+  if (modalError) {
+    modalError.textContent = 'Erro ao salvar profissional: ' + message
+    modalError.style.display = 'block'
+  } else {
+    alert('Erro ao salvar profissional: ' + message)
+  }
 }
 
 async function toggleProf(id, ativo) {
