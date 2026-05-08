@@ -4,7 +4,9 @@
 
 const SUPABASE_URL = 'https://vsyiwgxsbvjjloftpvkf.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzeWl3Z3hzYnZqamxvZnRwdmtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwOTA2NzgsImV4cCI6MjA5MDY2NjY3OH0.DJqO-Y248xCr5mrffKcG2ZQQ_dhRubjzaQmF4V6sO90'
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { storageKey: 'autoagenda-superadmin-auth' }
+})
 
 let negocios = []
 let editingNegocioId = null
@@ -241,14 +243,7 @@ async function entrarComoAdmin(negocioId) {
     alert('Erro: ' + (result.error || 'Nao foi possivel entrar como admin'))
     return
   }
-  if (session?.access_token && session?.refresh_token) {
-    localStorage.setItem('autoagenda_superadmin_session_backup', JSON.stringify({
-      access_token: session.access_token,
-      refresh_token: session.refresh_token,
-      expires_at: session.expires_at,
-      token_type: session.token_type,
-    }))
-  }
+
   window.open(result.url, '_blank')
 }
 
