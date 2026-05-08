@@ -606,6 +606,10 @@ function checkImpersonation() {
       banner.style.display = 'flex'
       // Adicionar padding no body para o banner
       document.body.style.paddingTop = '44px'
+      const contentEl = document.querySelector('.content')
+      if (contentEl) contentEl.style.paddingTop = '70px'
+      const sidebar = document.querySelector('.sidebar')
+      if (sidebar) sidebar.style.paddingTop = '44px'
       // Preencher nome do negócio quando carregar
       const interval = setInterval(() => {
         if (negocio?.nome) {
