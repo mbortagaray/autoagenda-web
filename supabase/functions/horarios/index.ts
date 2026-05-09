@@ -93,8 +93,9 @@ Deno.serve(async (req) => {
   const { data: bloqueios } = await supabase
     .from('bloqueios')
     .select('hora_inicio, hora_fim')
-    .eq('profissional_id', profissionalId)
-    .eq('data', data)
+    .eq('negocio_id', negocioId)
+    .or(`profissional_id.eq.${profissionalId},profissional_id.is.null`)
+    .or(`data.eq.${data},and(data_inicio.lte.${data},data_fim.gte.${data})`)
 
   // Montar intervalos ocupados
   const ocupados: { inicio: number, fim: number }[] = []
@@ -105,7 +106,7 @@ Deno.serve(async (req) => {
   }
 
   for (const bl of (bloqueios || [])) {
-    ocupados.push({ inicio: timeToMin(bl.hora_inicio), fim: timeToMin(bl.hora_fim) })
+    ocupados.push({ inicio: timeToMin(bl.hora_inicio || '00:00'), fim: timeToMin(bl.hora_fim || '23:59') })
   }
 
   // Gerar slots a partir dos horários do profissional

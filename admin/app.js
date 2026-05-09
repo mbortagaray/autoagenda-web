@@ -568,38 +568,72 @@ function initBloqueios() {
   document.getElementById('bDataFim').value = today
   document.getElementById('bAno').value = new Date().getFullYear()
   renderBloqueioProfissionais()
+  renderBloqueioEscopos()
+  renderBloqueioFiltros()
   onBloqueioTipoChange()
   loadBloqueios()
 }
 
+function clearBloqueioFeedback() {
+  const feedback = document.getElementById('bloqueioFeedback')
+  feedback.style.display = 'none'
+  feedback.textContent = ''
+}
+
+function switchBloqueiosView(view) {
+  document.getElementById('bloqueiosCriarView').style.display = view === 'criar' ? 'block' : 'none'
+  document.getElementById('bloqueiosConsultarView').style.display = view === 'consultar' ? 'block' : 'none'
+  document.getElementById('bloqueiosCriarTab').classList.toggle('active', view === 'criar')
+  document.getElementById('bloqueiosConsultarTab').classList.toggle('active', view === 'consultar')
+  if (view === 'consultar') loadBloqueios()
+}
+
 function renderBloqueioProfissionais() {
   const sel = document.getElementById('bProfissional')
-  sel.innerHTML = '<option value="">Todos os profissionais</option>' +
+  sel.innerHTML =
     profissionais
       .filter(p => p.ativo !== false)
       .map(p => `<option value="${p.id}">${p.nome}</option>`)
       .join('')
 }
 
+function renderBloqueioEscopos() {
+  const nomeNegocio = negocio?.nome || 'negócio'
+  document.getElementById('bEscopo').innerHTML = `
+    <option value="negocio">Todo o ${nomeNegocio}</option>
+    <option value="profissional">Apenas um profissional</option>
+  `
+}
+
+function renderBloqueioFiltros() {
+  const nomeNegocio = negocio?.nome || 'negócio'
+  document.getElementById('bFiltro').innerHTML = `
+    <option value="todos">Todos</option>
+    <option value="negocio">Todo o ${nomeNegocio}</option>
+    ${profissionais
+      .filter(p => p.ativo !== false)
+      .map(p => `<option value="${p.id}">${p.nome}</option>`)
+      .join('')}
+  `
+}
+
+function onBloqueioEscopoChange() {
+  clearBloqueioFeedback()
+  const escopo = document.getElementById('bEscopo').value
+  document.getElementById('bProfissionalGroup').style.display = escopo === 'profissional' ? 'block' : 'none'
+}
+
 function onBloqueioTipoChange() {
+  clearBloqueioFeedback()
   const tipo = document.getElementById('bTipo').value
   document.getElementById('bDataFimGroup').style.display = tipo === 'periodo' ? 'block' : 'none'
   document.getElementById('bAnoGroup').style.display = tipo === 'feriado' ? 'block' : 'none'
   document.getElementById('bDataInicio').style.display = tipo === 'feriado' ? 'none' : 'block'
   document.getElementById('bDataInicioLabel').style.display = tipo === 'feriado' ? 'none' : 'block'
   document.getElementById('bHorarioRow').style.display = tipo === 'feriado' ? 'none' : 'flex'
+  document.getElementById('bEscopo').value = tipo === 'periodo' ? 'profissional' : 'negocio'
+  onBloqueioEscopoChange()
   if (tipo === 'feriado') document.getElementById('bMotivo').value = 'Feriado nacional'
-}
-
-function getDateRange(startStr, endStr) {
-  const dates = []
-  const current = new Date(startStr + 'T12:00:00')
-  const end = new Date(endStr + 'T12:00:00')
-  while (current <= end) {
-    dates.push(current.toISOString().split('T')[0])
-    current.setDate(current.getDate() + 1)
-  }
-  return dates
 }
 
 async function fetchFeriadosBrasil(year) {
@@ -609,15 +643,15 @@ async function fetchFeriadosBrasil(year) {
 }
 
 async function saveBloqueio() {
+  clearBloqueioFeedback()
   const feedback = document.getElementById('bloqueioFeedback')
-  feedback.style.display = 'none'
 
   const tipo = document.getElementById('bTipo').value
-  const profId = document.getElementById('bProfissional').value
-  const profs = profId ? profissionais.filter(p => p.id === profId) : profissionais.filter(p => p.ativo !== false)
+  const escopo = document.getElementById('bEscopo').value
+  const profId = escopo === 'profissional' ? document.getElementById('bProfissional').value : null
   const motivoBase = document.getElementById('bMotivo').value.trim()
 
-  if (!profs.length) return showBloqueioError('Cadastre pelo menos um profissional ativo.')
+  if (escopo === 'profissional' && !profId) return showBloqueioError('Selecione um profissional.')
 
   let datas = []
   let horaInicio = document.getElementById('bHoraInicio').value || '00:00'
@@ -628,7 +662,7 @@ async function saveBloqueio() {
     if (tipo === 'feriado') {
       const year = Number(document.getElementById('bAno').value) || new Date().getFullYear()
       const feriados = await fetchFeriadosBrasil(year)
-      datas = feriados.map(f => ({ data: f.date, motivo: f.name || 'Feriado nacional' }))
+      datas = feriados.map(f => ({ inicio: f.date, fim: f.date, motivo: f.name || 'Feriado nacional' }))
       horaInicio = '00:00'
       horaFim = '23:59'
     } else {
@@ -637,22 +671,20 @@ async function saveBloqueio() {
       if (!dataInicio || !dataFim) return showBloqueioError('Informe a data do bloqueio.')
       if (dataFim < dataInicio) return showBloqueioError('A data final não pode ser anterior à inicial.')
       if (horaFim <= horaInicio) return showBloqueioError('O horário final deve ser maior que o inicial.')
-      datas = getDateRange(dataInicio, dataFim).map(data => ({ data, motivo }))
+      datas = [{ inicio: dataInicio, fim: dataFim, motivo }]
     }
 
-    const rows = []
-    for (const prof of profs) {
-      for (const item of datas) {
-        rows.push({
-          negocio_id: negocioId,
-          profissional_id: prof.id,
-          data: item.data,
-          hora_inicio: horaInicio,
-          hora_fim: horaFim,
-          motivo: item.motivo || motivo,
-        })
-      }
-    }
+    const rows = datas.map(item => ({
+      negocio_id: negocioId,
+      profissional_id: profId,
+      data: item.inicio,
+      data_inicio: item.inicio,
+      data_fim: item.fim,
+      hora_inicio: horaInicio,
+      hora_fim: horaFim,
+      tipo,
+      motivo: item.motivo || motivo,
+    }))
 
     const { error } = await sb.from('bloqueios').insert(rows)
     if (error) return showBloqueioError(error.message)
@@ -677,14 +709,20 @@ async function loadBloqueios() {
   const container = document.getElementById('bloqueiosContent')
   container.innerHTML = '<div class="loading-sm">Carregando...</div>'
   const today = new Date().toISOString().split('T')[0]
-  const { data, error } = await sb
+  const filtro = document.getElementById('bFiltro')?.value || 'todos'
+  let query = sb
     .from('bloqueios')
-    .select('id, data, hora_inicio, hora_fim, motivo, profissionais(nome)')
+    .select('id, data, data_inicio, data_fim, hora_inicio, hora_fim, motivo, tipo, profissional_id, profissionais(nome)')
     .eq('negocio_id', negocioId)
-    .gte('data', today)
+    .or(`data.gte.${today},data_fim.gte.${today}`)
     .order('data', { ascending: true })
     .order('hora_inicio', { ascending: true })
     .limit(80)
+
+  if (filtro === 'negocio') query = query.is('profissional_id', null)
+  if (filtro !== 'todos' && filtro !== 'negocio') query = query.or(`profissional_id.eq.${filtro},profissional_id.is.null`)
+
+  const { data, error } = await query
 
   if (error) {
     container.innerHTML = '<div class="agenda-empty">Erro ao carregar bloqueios</div>'
@@ -696,12 +734,16 @@ async function loadBloqueios() {
   }
 
   container.innerHTML = '<div class="table-card">' + data.map(b => {
-    const [ano, mes, dia] = b.data.split('-')
+    const inicio = b.data_inicio || b.data
+    const fim = b.data_fim || b.data || inicio
+    const dataLabel = formatBloqueioPeriodo(inicio, fim)
+    const horarioLabel = `${b.hora_inicio?.slice(0,5) || '00:00'}-${b.hora_fim?.slice(0,5) || '23:59'}`
+    const escopoLabel = b.profissional_id ? (b.profissionais?.nome || 'Profissional') : `Todo o ${negocio?.nome || 'negócio'}`
     return `
       <div class="table-row">
         <div class="table-main">
-          <div class="table-name">${dia}/${mes}/${ano} &bull; ${b.hora_inicio?.slice(0,5)}-${b.hora_fim?.slice(0,5)}</div>
-          <div class="table-sub">${b.profissionais?.nome || 'Profissional'} &bull; ${b.motivo || 'Bloqueio'}</div>
+          <div class="table-name">${b.motivo || tipoBloqueioLabel(b.tipo)} &bull; ${dataLabel}</div>
+          <div class="table-sub">${escopoLabel} &bull; ${horarioLabel}</div>
         </div>
         <div class="table-actions">
           <button onclick="deleteBloqueio('${b.id}')">Remover</button>
@@ -711,10 +753,31 @@ async function loadBloqueios() {
   }).join('') + '</div>'
 }
 
+function formatDateBr(dateStr) {
+  if (!dateStr) return ''
+  const [ano, mes, dia] = dateStr.split('-')
+  return `${dia}/${mes}/${ano}`
+}
+
+function formatBloqueioPeriodo(inicio, fim) {
+  if (!fim || fim === inicio) return formatDateBr(inicio)
+  return `${formatDateBr(inicio)} até ${formatDateBr(fim)}`
+}
+
+function tipoBloqueioLabel(tipo) {
+  const labels = {
+    feriado: 'Feriado',
+    dia_unico: 'Bloqueio',
+    periodo: 'Período',
+  }
+  return labels[tipo] || 'Bloqueio'
+}
+
 async function deleteBloqueio(id) {
   if (!confirm('Remover este bloqueio?')) return
   const { error } = await sb.from('bloqueios').delete().eq('id', id)
   if (error) return alert('Erro ao remover bloqueio: ' + error.message)
+  clearBloqueioFeedback()
   await loadBloqueios()
 }
 
