@@ -74,7 +74,17 @@ Deno.serve(async (req) => {
     .eq('dia_semana', diaSemana)
     .order('hora_inicio')
 
-  if (!horariosProf || horariosProf.length === 0) {
+  const { data: bloqueios } = await supabase
+    .from('bloqueios')
+    .select('hora_inicio, hora_fim, tipo')
+    .eq('negocio_id', negocioId)
+    .or(`profissional_id.eq.${profissionalId},profissional_id.is.null`)
+    .or(`data.eq.${data},and(data_inicio.lte.${data},data_fim.gte.${data})`)
+
+  const horariosEspeciais = (bloqueios || []).filter(bl => bl.tipo === 'horario_especial')
+  const horariosBase = horariosEspeciais.length ? horariosEspeciais : (horariosProf || [])
+
+  if (!horariosBase.length) {
     return new Response(
       JSON.stringify({ manha: [], tarde: [], noite: [], mensagem: 'Profissional não atende neste dia' }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -89,14 +99,6 @@ Deno.serve(async (req) => {
     .eq('data', data)
     .eq('status', 'confirmado')
 
-  // Buscar bloqueios do dia
-  const { data: bloqueios } = await supabase
-    .from('bloqueios')
-    .select('hora_inicio, hora_fim')
-    .eq('negocio_id', negocioId)
-    .or(`profissional_id.eq.${profissionalId},profissional_id.is.null`)
-    .or(`data.eq.${data},and(data_inicio.lte.${data},data_fim.gte.${data})`)
-
   // Montar intervalos ocupados
   const ocupados: { inicio: number, fim: number }[] = []
 
@@ -105,7 +107,7 @@ Deno.serve(async (req) => {
     ocupados.push({ inicio, fim: inicio + ag.duracao_min })
   }
 
-  for (const bl of (bloqueios || [])) {
+  for (const bl of (bloqueios || []).filter(bl => bl.tipo !== 'horario_especial')) {
     ocupados.push({ inicio: timeToMin(bl.hora_inicio || '00:00'), fim: timeToMin(bl.hora_fim || '23:59') })
   }
 
@@ -113,7 +115,7 @@ Deno.serve(async (req) => {
   const INTERVALO = 30
   const slots: Slot[] = []
 
-  for (const periodo of horariosProf) {
+  for (const periodo of horariosBase) {
     const inicPeriodo = timeToMin(periodo.hora_inicio)
     const fimPeriodo = timeToMin(periodo.hora_fim)
 

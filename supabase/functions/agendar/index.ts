@@ -84,12 +84,26 @@ Deno.serve(async (req) => {
   // Verificar bloqueios
   const { data: bloqueios } = await supabase
     .from('bloqueios')
-    .select('hora_inicio, hora_fim')
+    .select('hora_inicio, hora_fim, tipo')
     .eq('negocio_id', negocio_id)
     .or(`profissional_id.eq.${profissional_id},profissional_id.is.null`)
     .or(`data.eq.${data},and(data_inicio.lte.${data},data_fim.gte.${data})`)
 
-  const temBloqueio = (bloqueios || []).some(bl => {
+  const horariosEspeciais = (bloqueios || []).filter(bl => bl.tipo === 'horario_especial')
+  const dentroHorarioEspecial = !horariosEspeciais.length || horariosEspeciais.some(bl => {
+    const blInicio = timeToMin(bl.hora_inicio || '00:00')
+    const blFim = timeToMin(bl.hora_fim || '23:59')
+    return novoInicio >= blInicio && novoFim <= blFim
+  })
+
+  if (!dentroHorarioEspecial) {
+    return new Response(
+      JSON.stringify({ error: 'Horário fora do funcionamento especial deste dia.' }),
+      { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+
+  const temBloqueio = (bloqueios || []).filter(bl => bl.tipo !== 'horario_especial').some(bl => {
     const blInicio = timeToMin(bl.hora_inicio || '00:00')
     const blFim = timeToMin(bl.hora_fim || '23:59')
     return novoInicio < blFim && novoFim > blInicio

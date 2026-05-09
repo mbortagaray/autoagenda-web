@@ -626,14 +626,21 @@ function onBloqueioEscopoChange() {
 function onBloqueioTipoChange() {
   clearBloqueioFeedback()
   const tipo = document.getElementById('bTipo').value
+  const horarioLabels = document.querySelectorAll('#bHorarioRow .form-label')
+  const isHorarioEspecial = tipo === 'horario_especial'
   document.getElementById('bDataFimGroup').style.display = tipo === 'periodo' ? 'block' : 'none'
   document.getElementById('bAnoGroup').style.display = tipo === 'feriado' ? 'block' : 'none'
   document.getElementById('bDataInicio').style.display = tipo === 'feriado' ? 'none' : 'block'
   document.getElementById('bDataInicioLabel').style.display = tipo === 'feriado' ? 'none' : 'block'
   document.getElementById('bHorarioRow').style.display = tipo === 'feriado' ? 'none' : 'flex'
+  if (horarioLabels.length >= 2) {
+    horarioLabels[0].textContent = isHorarioEspecial ? 'Abertura' : 'Início'
+    horarioLabels[1].textContent = isHorarioEspecial ? 'Fechamento' : 'Fim'
+  }
   document.getElementById('bEscopo').value = tipo === 'periodo' ? 'profissional' : 'negocio'
   onBloqueioEscopoChange()
   if (tipo === 'feriado') document.getElementById('bMotivo').value = 'Feriado nacional'
+  if (isHorarioEspecial) document.getElementById('bMotivo').value = 'Horário especial'
 }
 
 async function fetchFeriadosBrasil(year) {
@@ -656,7 +663,7 @@ async function saveBloqueio() {
   let datas = []
   let horaInicio = document.getElementById('bHoraInicio').value || '00:00'
   let horaFim = document.getElementById('bHoraFim').value || '23:59'
-  let motivo = motivoBase || 'Bloqueio de agenda'
+  let motivo = motivoBase || (tipo === 'horario_especial' ? 'Horário especial' : 'Bloqueio de agenda')
 
   try {
     if (tipo === 'feriado') {
@@ -690,7 +697,9 @@ async function saveBloqueio() {
     if (error) return showBloqueioError(error.message)
 
     feedback.className = 'form-success'
-    feedback.textContent = `${rows.length} bloqueio(s) criado(s).`
+    feedback.textContent = tipo === 'horario_especial'
+      ? `${rows.length} horário(s) especial(is) criado(s).`
+      : `${rows.length} bloqueio(s) criado(s).`
     feedback.style.display = 'block'
     await loadBloqueios()
   } catch (err) {
@@ -737,7 +746,9 @@ async function loadBloqueios() {
     const inicio = b.data_inicio || b.data
     const fim = b.data_fim || b.data || inicio
     const dataLabel = formatBloqueioPeriodo(inicio, fim)
-    const horarioLabel = `${b.hora_inicio?.slice(0,5) || '00:00'}-${b.hora_fim?.slice(0,5) || '23:59'}`
+    const horarioLabel = b.tipo === 'horario_especial'
+      ? `funciona ${b.hora_inicio?.slice(0,5) || '00:00'}-${b.hora_fim?.slice(0,5) || '23:59'}`
+      : `${b.hora_inicio?.slice(0,5) || '00:00'}-${b.hora_fim?.slice(0,5) || '23:59'}`
     const escopoLabel = b.profissional_id ? (b.profissionais?.nome || 'Profissional') : `Todo o ${negocio?.nome || 'negócio'}`
     return `
       <div class="table-row">
@@ -769,6 +780,7 @@ function tipoBloqueioLabel(tipo) {
     feriado: 'Feriado',
     dia_unico: 'Bloqueio',
     periodo: 'Período',
+    horario_especial: 'Horário especial',
   }
   return labels[tipo] || 'Bloqueio'
 }
