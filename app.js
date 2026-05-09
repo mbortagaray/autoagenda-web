@@ -19,6 +19,26 @@ function getSlug() {
 
 const slug = getSlug()
 
+function normalizePhone(value) {
+  let digits = String(value || '').replace(/\D/g, '')
+  if (digits.length > 11 && digits.startsWith('55')) digits = digits.slice(2)
+
+  if (digits.length === 10 && /^[6-9]/.test(digits[2])) {
+    digits = digits.slice(0, 2) + '9' + digits.slice(2)
+  }
+
+  return digits.slice(0, 11)
+}
+
+function formatPhone(value) {
+  const digits = normalizePhone(value)
+  if (digits.length > 10) return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7,11)}`
+  if (digits.length > 6) return `(${digits.slice(0,2)}) ${digits.slice(2,6)}-${digits.slice(6,10)}`
+  if (digits.length > 2) return `(${digits.slice(0,2)}) ${digits.slice(2)}`
+  if (digits.length > 0) return `(${digits}`
+  return ''
+}
+
 // ---- PIN AUTOMÁTICO ----
 // Gerado a partir do telefone: remove não-dígitos, remove primeiro 9, pega 5 primeiros dígitos
 // Ex: 98754-2120 → 87542120 → 87542
@@ -83,7 +103,7 @@ async function criarAgendamento() {
 }
 
 async function buscarCliente(telefone) {
-  const tel = telefone.replace(/\D/g, '')
+  const tel = normalizePhone(telefone)
   if (tel.length < 10) return null
   const params = new URLSearchParams({ negocio_id: config.negocio.id, telefone: tel })
   const res = await fetch(`${FUNCTIONS_URL}/cliente-lookup?${params}`)
@@ -91,7 +111,7 @@ async function buscarCliente(telefone) {
 }
 
 async function buscarMeusAgendamentos(telefone) {
-  const tel = telefone.replace(/\D/g, '')
+  const tel = normalizePhone(telefone)
   const pin = gerarPin(tel)
   const params = new URLSearchParams({ negocio_id: config.negocio.id, telefone: tel, pin })
   const res = await fetch(`${FUNCTIONS_URL}/meus-agendamentos?${params}`)
@@ -99,7 +119,7 @@ async function buscarMeusAgendamentos(telefone) {
 }
 
 async function buscarAgendaProfissional(telefone, data) {
-  const tel = telefone.replace(/\D/g, '')
+  const tel = normalizePhone(telefone)
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_profissional_agenda`, {
     method: 'POST',
     headers: {
@@ -481,19 +501,14 @@ function changeMonth(d) {
 
 // ---- STEP 4: DADOS + CLIENTE LOOKUP ----
 function maskTel(el) {
-  let v = el.value.replace(/\D/g, '')
-  if (v.length > 11) v = v.slice(0, 11)
-  if (v.length > 6) v = `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`
-  else if (v.length > 2) v = `(${v.slice(0,2)}) ${v.slice(2)}`
-  else if (v.length > 0) v = `(${v}`
-  el.value = v
+  el.value = formatPhone(el.value)
 }
 
 let lookupTimer = null
 async function onTelInput(el) {
   maskTel(el)
 
-  const tel = el.value.replace(/\D/g, '')
+  const tel = normalizePhone(el.value)
   const feedbackEl = document.getElementById('clienteFeedback')
   const nomeGroup = document.getElementById('nomeGroup')
 
@@ -536,7 +551,7 @@ async function onTelInput(el) {
 }
 
 function checkStep4() {
-  const tel = document.getElementById('inputTel').value.replace(/\D/g, '')
+  const tel = normalizePhone(document.getElementById('inputTel').value)
   const telOk = tel.length >= 10
   const nomeInput = document.getElementById('inputNome').value.trim()
   const nomeOk = state.clienteEncontrado || nomeInput.length >= 2
@@ -563,7 +578,7 @@ function formatDateBR(dateStr) {
 async function showMeusAgendamentos() {
   const container = document.getElementById('meusAgendamentosContent')
   const telInput = document.getElementById('inputTelConsulta')
-  const tel = telInput.value.replace(/\D/g, '')
+  const tel = normalizePhone(telInput.value)
 
   if (tel.length < 10) {
     container.innerHTML = '<div style="color:#8B3A3A;text-align:center;padding:12px">Digite um telefone válido</div>'
@@ -643,13 +658,6 @@ function renderAgendaProfissional(result) {
       <div class="agenda-prof-list">${cards}</div>
     </div>
   `
-}
-
-function formatPhone(value) {
-  const digits = String(value || '').replace(/\D/g, '')
-  if (digits.length === 11) return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7)}`
-  if (digits.length === 10) return `(${digits.slice(0,2)}) ${digits.slice(2,6)}-${digits.slice(6)}`
-  return value || ''
 }
 
 // ---- STEP 5: RESUMO ----

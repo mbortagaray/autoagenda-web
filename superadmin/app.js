@@ -20,12 +20,18 @@ let editingProfId = null
 function normalizePhone(value) {
   let digits = String(value || '').replace(/\D/g, '')
   if (digits.length > 11 && digits.startsWith('55')) digits = digits.slice(2)
+
+  if (digits.length === 10 && /^[6-9]/.test(digits[2])) {
+    digits = digits.slice(0, 2) + '9' + digits.slice(2)
+  }
+
   return digits.slice(0, 11)
 }
 
 function formatPhone(value) {
   const digits = normalizePhone(value)
-  if (digits.length > 6) return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7)}`
+  if (digits.length > 10) return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7,11)}`
+  if (digits.length > 6) return `(${digits.slice(0,2)}) ${digits.slice(2,6)}-${digits.slice(6,10)}`
   if (digits.length > 2) return `(${digits.slice(0,2)}) ${digits.slice(2)}`
   if (digits.length > 0) return `(${digits}`
   return ''
