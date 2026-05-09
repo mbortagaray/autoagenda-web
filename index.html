@@ -128,7 +128,7 @@
       <div class="section-hint">Digite seu WhatsApp para continuar</div>
       <div class="form-group">
         <label class="form-label">WhatsApp</label>
-        <input class="form-input" type="tel" id="inputTel" placeholder="(11) 99999-9999" oninput="onTelInput(this)">
+        <input class="form-input" type="tel" id="inputTel" placeholder="(11) 99999-9999" oninput="onTelInput(this)" onblur="normalizeTelInput(this)">
         <div class="cliente-feedback" id="clienteFeedback"></div>
       </div>
       <div class="form-group" id="nomeGroup" style="display:none">
@@ -174,7 +174,7 @@
       <div class="section-hint">Digite seu WhatsApp para consultar sua agenda</div>
       <div class="form-group">
         <label class="form-label">WhatsApp</label>
-        <input class="form-input" type="tel" id="inputTelConsulta" placeholder="(11) 99999-9999" oninput="maskTel(this)">
+        <input class="form-input" type="tel" id="inputTelConsulta" placeholder="(11) 99999-9999" oninput="maskTel(this)" onblur="normalizeTelInput(this)">
       </div>
       <button class="btn btn-primary" onclick="showMeusAgendamentos()">Consultar</button>
       <div id="meusAgendamentosContent" style="margin-top:20px"></div>
@@ -188,6 +188,6 @@
   </div>
 </div>
 
-<script src="app.js?v=7"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>

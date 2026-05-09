@@ -19,9 +19,14 @@ function getSlug() {
 
 const slug = getSlug()
 
-function normalizePhone(value) {
+function getPhoneDigits(value) {
   let digits = String(value || '').replace(/\D/g, '')
   if (digits.length > 11 && digits.startsWith('55')) digits = digits.slice(2)
+  return digits.slice(0, 11)
+}
+
+function normalizePhone(value) {
+  let digits = getPhoneDigits(value)
 
   if (digits.length === 10 && /^[6-9]/.test(digits[2])) {
     digits = digits.slice(0, 2) + '9' + digits.slice(2)
@@ -30,13 +35,16 @@ function normalizePhone(value) {
   return digits.slice(0, 11)
 }
 
-function formatPhone(value) {
-  const digits = normalizePhone(value)
+function formatPhoneDigits(digits) {
   if (digits.length > 10) return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7,11)}`
   if (digits.length > 6) return `(${digits.slice(0,2)}) ${digits.slice(2,6)}-${digits.slice(6,10)}`
   if (digits.length > 2) return `(${digits.slice(0,2)}) ${digits.slice(2)}`
   if (digits.length > 0) return `(${digits}`
   return ''
+}
+
+function formatPhone(value) {
+  return formatPhoneDigits(normalizePhone(value))
 }
 
 // ---- PIN AUTOMÁTICO ----
@@ -501,6 +509,10 @@ function changeMonth(d) {
 
 // ---- STEP 4: DADOS + CLIENTE LOOKUP ----
 function maskTel(el) {
+  el.value = formatPhoneDigits(getPhoneDigits(el.value))
+}
+
+function normalizeTelInput(el) {
   el.value = formatPhone(el.value)
 }
 

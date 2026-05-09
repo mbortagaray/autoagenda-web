@@ -15,9 +15,14 @@ let servicos = []
 let profissionais = []
 let editingId = null
 
-function normalizePhone(value) {
+function getPhoneDigits(value) {
   let digits = String(value || '').replace(/\D/g, '')
   if (digits.length > 11 && digits.startsWith('55')) digits = digits.slice(2)
+  return digits.slice(0, 11)
+}
+
+function normalizePhone(value) {
+  let digits = getPhoneDigits(value)
 
   if (digits.length === 10 && /^[6-9]/.test(digits[2])) {
     digits = digits.slice(0, 2) + '9' + digits.slice(2)
@@ -26,8 +31,7 @@ function normalizePhone(value) {
   return digits.slice(0, 11)
 }
 
-function formatPhone(value) {
-  const digits = normalizePhone(value)
+function formatPhoneDigits(digits) {
   if (digits.length > 10) return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7,11)}`
   if (digits.length > 6) return `(${digits.slice(0,2)}) ${digits.slice(2,6)}-${digits.slice(6,10)}`
   if (digits.length > 2) return `(${digits.slice(0,2)}) ${digits.slice(2)}`
@@ -35,7 +39,15 @@ function formatPhone(value) {
   return ''
 }
 
+function formatPhone(value) {
+  return formatPhoneDigits(normalizePhone(value))
+}
+
 function maskPhoneInput(input) {
+  input.value = formatPhoneDigits(getPhoneDigits(input.value))
+}
+
+function normalizePhoneInput(input) {
   input.value = formatPhone(input.value)
 }
 
@@ -635,11 +647,8 @@ async function saveBloqueio() {
           negocio_id: negocioId,
           profissional_id: prof.id,
           data: item.data,
-          data_inicio: item.data,
-          data_fim: item.data,
           hora_inicio: horaInicio,
           hora_fim: horaFim,
-          tipo,
           motivo: item.motivo || motivo,
         })
       }
@@ -670,7 +679,7 @@ async function loadBloqueios() {
   const today = new Date().toISOString().split('T')[0]
   const { data, error } = await sb
     .from('bloqueios')
-    .select('id, data, hora_inicio, hora_fim, tipo, motivo, profissionais(nome)')
+    .select('id, data, hora_inicio, hora_fim, motivo, profissionais(nome)')
     .eq('negocio_id', negocioId)
     .gte('data', today)
     .order('data', { ascending: true })
@@ -692,7 +701,7 @@ async function loadBloqueios() {
       <div class="table-row">
         <div class="table-main">
           <div class="table-name">${dia}/${mes}/${ano} &bull; ${b.hora_inicio?.slice(0,5)}-${b.hora_fim?.slice(0,5)}</div>
-          <div class="table-sub">${b.profissionais?.nome || 'Profissional'} &bull; ${b.motivo || b.tipo || 'Bloqueio'}</div>
+          <div class="table-sub">${b.profissionais?.nome || 'Profissional'} &bull; ${b.motivo || 'Bloqueio'}</div>
         </div>
         <div class="table-actions">
           <button onclick="deleteBloqueio('${b.id}')">Remover</button>
