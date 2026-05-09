@@ -97,6 +97,14 @@ body.is-impersonating .content { padding-top: 70px; }
 .form-input:focus { border-color: var(--accent); }
 .form-row { display: flex; gap: 12px; }
 .form-row .form-group { flex: 1; }
+.form-error, .form-success {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+.form-error { background: #fff0f0; color: var(--danger); }
+.form-success { background: #edf8ef; color: #1e7a34; }
 
 /* BUTTONS */
 .btn {

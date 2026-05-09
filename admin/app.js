@@ -107,6 +107,7 @@ function switchTab(tab) {
 
   if (tab === 'clientes') loadClientes()
   if (tab === 'agenda') loadAgenda()
+  if (tab === 'bloqueios') initBloqueios()
 
   // Close mobile sidebar
   document.getElementById('sidebar').classList.remove('open')
@@ -540,6 +541,166 @@ function connectGoogleCal(profId) {
   window.open(url, '_blank', 'width=500,height=600')
   // Reload after a delay to check if connected
   setTimeout(() => loadProfissionais(), 10000)
+}
+
+// ============ BLOQUEIOS ============
+function initBloqueios() {
+  const today = new Date().toISOString().split('T')[0]
+  document.getElementById('bDataInicio').value = today
+  document.getElementById('bDataFim').value = today
+  document.getElementById('bAno').value = new Date().getFullYear()
+  renderBloqueioProfissionais()
+  onBloqueioTipoChange()
+  loadBloqueios()
+}
+
+function renderBloqueioProfissionais() {
+  const sel = document.getElementById('bProfissional')
+  sel.innerHTML = '<option value="">Todos os profissionais</option>' +
+    profissionais
+      .filter(p => p.ativo !== false)
+      .map(p => `<option value="${p.id}">${p.nome}</option>`)
+      .join('')
+}
+
+function onBloqueioTipoChange() {
+  const tipo = document.getElementById('bTipo').value
+  document.getElementById('bDataFimGroup').style.display = tipo === 'periodo' ? 'block' : 'none'
+  document.getElementById('bAnoGroup').style.display = tipo === 'feriado' ? 'block' : 'none'
+  document.getElementById('bDataInicio').style.display = tipo === 'feriado' ? 'none' : 'block'
+  document.getElementById('bDataInicioLabel').style.display = tipo === 'feriado' ? 'none' : 'block'
+  document.getElementById('bHorarioRow').style.display = tipo === 'feriado' ? 'none' : 'flex'
+  if (tipo === 'feriado') document.getElementById('bMotivo').value = 'Feriado nacional'
+}
+
+function getDateRange(startStr, endStr) {
+  const dates = []
+  const current = new Date(startStr + 'T12:00:00')
+  const end = new Date(endStr + 'T12:00:00')
+  while (current <= end) {
+    dates.push(current.toISOString().split('T')[0])
+    current.setDate(current.getDate() + 1)
+  }
+  return dates
+}
+
+async function fetchFeriadosBrasil(year) {
+  const res = await fetch(`https://brasilapi.com.br/api/feriados/v1/${year}`)
+  if (!res.ok) throw new Error('Não foi possível buscar feriados')
+  return res.json()
+}
+
+async function saveBloqueio() {
+  const feedback = document.getElementById('bloqueioFeedback')
+  feedback.style.display = 'none'
+
+  const tipo = document.getElementById('bTipo').value
+  const profId = document.getElementById('bProfissional').value
+  const profs = profId ? profissionais.filter(p => p.id === profId) : profissionais.filter(p => p.ativo !== false)
+  const motivoBase = document.getElementById('bMotivo').value.trim()
+
+  if (!profs.length) return showBloqueioError('Cadastre pelo menos um profissional ativo.')
+
+  let datas = []
+  let horaInicio = document.getElementById('bHoraInicio').value || '00:00'
+  let horaFim = document.getElementById('bHoraFim').value || '23:59'
+  let motivo = motivoBase || 'Bloqueio de agenda'
+
+  try {
+    if (tipo === 'feriado') {
+      const year = Number(document.getElementById('bAno').value) || new Date().getFullYear()
+      const feriados = await fetchFeriadosBrasil(year)
+      datas = feriados.map(f => ({ data: f.date, motivo: f.name || 'Feriado nacional' }))
+      horaInicio = '00:00'
+      horaFim = '23:59'
+    } else {
+      const dataInicio = document.getElementById('bDataInicio').value
+      const dataFim = tipo === 'periodo' ? document.getElementById('bDataFim').value : dataInicio
+      if (!dataInicio || !dataFim) return showBloqueioError('Informe a data do bloqueio.')
+      if (dataFim < dataInicio) return showBloqueioError('A data final não pode ser anterior à inicial.')
+      if (horaFim <= horaInicio) return showBloqueioError('O horário final deve ser maior que o inicial.')
+      datas = getDateRange(dataInicio, dataFim).map(data => ({ data, motivo }))
+    }
+
+    const rows = []
+    for (const prof of profs) {
+      for (const item of datas) {
+        rows.push({
+          negocio_id: negocioId,
+          profissional_id: prof.id,
+          data: item.data,
+          data_inicio: item.data,
+          data_fim: item.data,
+          hora_inicio: horaInicio,
+          hora_fim: horaFim,
+          tipo,
+          motivo: item.motivo || motivo,
+        })
+      }
+    }
+
+    const { error } = await sb.from('bloqueios').insert(rows)
+    if (error) return showBloqueioError(error.message)
+
+    feedback.className = 'form-success'
+    feedback.textContent = `${rows.length} bloqueio(s) criado(s).`
+    feedback.style.display = 'block'
+    await loadBloqueios()
+  } catch (err) {
+    showBloqueioError(err.message || 'Erro ao criar bloqueio.')
+  }
+}
+
+function showBloqueioError(message) {
+  const feedback = document.getElementById('bloqueioFeedback')
+  feedback.className = 'form-error'
+  feedback.textContent = message
+  feedback.style.display = 'block'
+}
+
+async function loadBloqueios() {
+  const container = document.getElementById('bloqueiosContent')
+  container.innerHTML = '<div class="loading-sm">Carregando...</div>'
+  const today = new Date().toISOString().split('T')[0]
+  const { data, error } = await sb
+    .from('bloqueios')
+    .select('id, data, hora_inicio, hora_fim, tipo, motivo, profissionais(nome)')
+    .eq('negocio_id', negocioId)
+    .gte('data', today)
+    .order('data', { ascending: true })
+    .order('hora_inicio', { ascending: true })
+    .limit(80)
+
+  if (error) {
+    container.innerHTML = '<div class="agenda-empty">Erro ao carregar bloqueios</div>'
+    return
+  }
+  if (!data || !data.length) {
+    container.innerHTML = '<div class="agenda-empty">Nenhum bloqueio futuro</div>'
+    return
+  }
+
+  container.innerHTML = '<div class="table-card">' + data.map(b => {
+    const [ano, mes, dia] = b.data.split('-')
+    return `
+      <div class="table-row">
+        <div class="table-main">
+          <div class="table-name">${dia}/${mes}/${ano} &bull; ${b.hora_inicio?.slice(0,5)}-${b.hora_fim?.slice(0,5)}</div>
+          <div class="table-sub">${b.profissionais?.nome || 'Profissional'} &bull; ${b.motivo || b.tipo || 'Bloqueio'}</div>
+        </div>
+        <div class="table-actions">
+          <button onclick="deleteBloqueio('${b.id}')">Remover</button>
+        </div>
+      </div>
+    `
+  }).join('') + '</div>'
+}
+
+async function deleteBloqueio(id) {
+  if (!confirm('Remover este bloqueio?')) return
+  const { error } = await sb.from('bloqueios').delete().eq('id', id)
+  if (error) return alert('Erro ao remover bloqueio: ' + error.message)
+  await loadBloqueios()
 }
 
 // ============ CLIENTES ============
