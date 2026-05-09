@@ -17,6 +17,24 @@ let profissionais = []
 let servicos = []
 let editingProfId = null
 
+function normalizePhone(value) {
+  let digits = String(value || '').replace(/\D/g, '')
+  if (digits.length > 11 && digits.startsWith('55')) digits = digits.slice(2)
+  return digits.slice(0, 11)
+}
+
+function formatPhone(value) {
+  const digits = normalizePhone(value)
+  if (digits.length > 6) return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7)}`
+  if (digits.length > 2) return `(${digits.slice(0,2)}) ${digits.slice(2)}`
+  if (digits.length > 0) return `(${digits}`
+  return ''
+}
+
+function maskPhoneInput(input) {
+  input.value = formatPhone(input.value)
+}
+
 // ---- AUTH ----
 async function doLogin() {
   const email = document.getElementById('loginEmail').value
@@ -351,7 +369,7 @@ function editProf(id) {
   editingProfId = id
   document.getElementById('modalProfTitle').textContent = 'Editar Profissional'
   document.getElementById('pNome').value = p.nome || ''
-  document.getElementById('pTel').value = p.telefone || ''
+  document.getElementById('pTel').value = formatPhone(p.telefone || '')
   document.getElementById('pEmoji').value = p.avatar_emoji || '👤'
   document.getElementById('pCor').value = p.avatar_cor || '#E8DDD0'
   document.getElementById('pFoto').value = p.foto_url || ''
@@ -463,7 +481,7 @@ async function saveProf() {
   const obj = {
     negocio_id: profNegocioId,
     nome,
-    telefone: document.getElementById('pTel').value.trim() || null,
+    telefone: normalizePhone(document.getElementById('pTel').value) || null,
     avatar_emoji: document.getElementById('pEmoji').value,
     avatar_cor: document.getElementById('pCor').value,
     foto_url: document.getElementById('pFoto').value || null,
