@@ -6,7 +6,7 @@
   <title>AutoAgenda — Super Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="stylesheet" href="/superadmin/style.css">
+  <link rel="stylesheet" href="/superadmin/style.css?v=2">
 </head>
 <body>
 
@@ -125,7 +125,7 @@
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Telefone</label>
-        <input class="form-input" id="nTel" placeholder="+55 (51) 99999-9999">
+        <input class="form-input" id="nTel" placeholder="(51) 99999-9999" oninput="maskPhoneInput(this)">
       </div>
       <div class="form-group" style="flex:2">
         <label class="form-label">Endereço</label>
@@ -273,6 +273,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/superadmin/app.js?v=5"></script>
+<script src="/superadmin/app.js?v=6"></script>
 </body>
 </html>

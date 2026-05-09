@@ -718,8 +718,9 @@ async function loadClientes() {
 
 function searchClientes() {
   const q = document.getElementById('clienteSearch').value.toLowerCase()
+  const qDigits = normalizePhone(q)
   const filtered = allClientes.filter(c =>
-    c.nome.toLowerCase().includes(q) || c.telefone.includes(q)
+    c.nome.toLowerCase().includes(q) || normalizePhone(c.telefone).includes(qDigits)
   )
   renderClientes(filtered)
 }
@@ -734,7 +735,7 @@ function renderClientes(list) {
     <div class="table-row">
       <div class="table-main">
         <div class="table-name">${c.nome}</div>
-        <div class="table-sub">${c.telefone} ${c.pin ? '&bull; PIN definido' : '&bull; Sem PIN'}</div>
+        <div class="table-sub">${formatPhone(c.telefone)} ${c.pin ? '&bull; PIN definido' : '&bull; Sem PIN'}</div>
       </div>
       <div class="table-actions">
         <button onclick="resetPin('${c.id}', '${c.nome}')">Novo PIN</button>
@@ -755,7 +756,7 @@ async function resetPin(id, nome) {
 // ============ CONFIG ============
 function loadConfig() {
   document.getElementById('cfgNome').value = negocio.nome || ''
-  document.getElementById('cfgTel').value = negocio.telefone || ''
+  document.getElementById('cfgTel').value = formatPhone(negocio.telefone || '')
   document.getElementById('cfgEndereco').value = negocio.endereco || ''
   document.getElementById('cfgCidade').value = negocio.cidade || ''
   document.getElementById('cfgMaps').value = negocio.google_maps_url || ''
@@ -768,7 +769,7 @@ function loadConfig() {
 async function saveConfig() {
   const obj = {
     nome: document.getElementById('cfgNome').value,
-    telefone: document.getElementById('cfgTel').value,
+    telefone: normalizePhone(document.getElementById('cfgTel').value) || null,
     endereco: document.getElementById('cfgEndereco').value,
     cidade: document.getElementById('cfgCidade').value,
     google_maps_url: document.getElementById('cfgMaps').value,

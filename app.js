@@ -167,11 +167,7 @@ function aplicarBizInfo(negocio) {
     document.getElementById('bizEndereco').style.display = 'none'
   }
   if (negocio.telefone) {
-    const tel = negocio.telefone
-    const fmt = tel.length === 13
-      ? `+${tel.slice(0,2)} (${tel.slice(2,4)}) ${tel.slice(4,9)}-${tel.slice(9)}`
-      : tel
-    document.getElementById('bizTelefoneText').textContent = fmt
+    document.getElementById('bizTelefoneText').textContent = formatPhone(negocio.telefone)
   } else {
     document.getElementById('bizTelefone').style.display = 'none'
   }

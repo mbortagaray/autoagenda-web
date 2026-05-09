@@ -140,7 +140,7 @@ function renderNegocios(list) {
         <div class="table-sub">
           <span class="slug-chip">/${n.slug}</span>
           ${n.cidade ? `<span>${n.cidade}</span>` : ''}
-          ${n.telefone ? `<span>${n.telefone}</span>` : ''}
+          ${n.telefone ? `<span>${formatPhone(n.telefone)}</span>` : ''}
         </div>
       </div>
       <div class="table-actions">
@@ -182,7 +182,7 @@ function editNegocio(id) {
   document.getElementById('modalNegocioTitle').textContent = 'Editar Negócio'
   document.getElementById('nNome').value = n.nome || ''
   document.getElementById('nSlug').value = n.slug || ''
-  document.getElementById('nTel').value = n.telefone || ''
+  document.getElementById('nTel').value = formatPhone(n.telefone || '')
   document.getElementById('nEndereco').value = n.endereco || ''
   document.getElementById('nCidade').value = n.cidade || ''
   document.getElementById('nMaps').value = n.google_maps_url || ''
@@ -211,7 +211,7 @@ async function saveNegocio() {
   const payload = {
     nome,
     slug,
-    telefone: document.getElementById('nTel').value.trim() || null,
+    telefone: normalizePhone(document.getElementById('nTel').value) || null,
     endereco: document.getElementById('nEndereco').value.trim() || null,
     cidade: document.getElementById('nCidade').value.trim() || null,
     google_maps_url: document.getElementById('nMaps').value.trim() || null,
