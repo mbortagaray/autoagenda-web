@@ -628,25 +628,37 @@ function onBloqueioTipoChange() {
   const tipo = document.getElementById('bTipo').value
   const horarioLabels = document.querySelectorAll('#bHorarioRow .form-label')
   const isHorarioEspecial = tipo === 'horario_especial'
+  const isPeriodo = tipo === 'periodo'
   document.getElementById('bDataFimGroup').style.display = tipo === 'periodo' ? 'block' : 'none'
   document.getElementById('bAnoGroup').style.display = tipo === 'feriado' ? 'block' : 'none'
   document.getElementById('bDataInicio').style.display = tipo === 'feriado' ? 'none' : 'block'
   document.getElementById('bDataInicioLabel').style.display = tipo === 'feriado' ? 'none' : 'block'
-  document.getElementById('bHorarioRow').style.display = tipo === 'feriado' ? 'none' : 'flex'
+  document.getElementById('bHorarioRow').style.display = (tipo === 'feriado' || isPeriodo) ? 'none' : 'flex'
   if (horarioLabels.length >= 2) {
-    horarioLabels[0].textContent = isHorarioEspecial ? 'Abertura' : 'Início'
+    horarioLabels[0].textContent = isHorarioEspecial ? 'Abertura' : 'Inicio'
     horarioLabels[1].textContent = isHorarioEspecial ? 'Fechamento' : 'Fim'
   }
   document.getElementById('bEscopo').value = tipo === 'periodo' ? 'profissional' : 'negocio'
   onBloqueioEscopoChange()
   if (tipo === 'feriado') document.getElementById('bMotivo').value = 'Feriado nacional'
-  if (isHorarioEspecial) document.getElementById('bMotivo').value = 'Horário especial'
+  if (isHorarioEspecial) document.getElementById('bMotivo').value = 'Horario especial'
 }
 
 async function fetchFeriadosBrasil(year) {
   const res = await fetch(`https://brasilapi.com.br/api/feriados/v1/${year}`)
   if (!res.ok) throw new Error('Não foi possível buscar feriados')
   return res.json()
+}
+
+function getDateRange(startStr, endStr) {
+  const dates = []
+  const current = new Date(startStr + 'T12:00:00')
+  const end = new Date(endStr + 'T12:00:00')
+  while (current <= end) {
+    dates.push(current.toISOString().split('T')[0])
+    current.setDate(current.getDate() + 1)
+  }
+  return dates
 }
 
 async function saveBloqueio() {
@@ -663,7 +675,7 @@ async function saveBloqueio() {
   let datas = []
   let horaInicio = document.getElementById('bHoraInicio').value || '00:00'
   let horaFim = document.getElementById('bHoraFim').value || '23:59'
-  let motivo = motivoBase || (tipo === 'horario_especial' ? 'Horário especial' : 'Bloqueio de agenda')
+  let motivo = motivoBase || (tipo === 'horario_especial' ? 'Horario especial' : 'Bloqueio de agenda')
 
   try {
     if (tipo === 'feriado') {
@@ -677,16 +689,21 @@ async function saveBloqueio() {
       const dataFim = tipo === 'periodo' ? document.getElementById('bDataFim').value : dataInicio
       if (!dataInicio || !dataFim) return showBloqueioError('Informe a data do bloqueio.')
       if (dataFim < dataInicio) return showBloqueioError('A data final não pode ser anterior à inicial.')
-      if (horaFim <= horaInicio) return showBloqueioError('O horário final deve ser maior que o inicial.')
-      datas = [{ inicio: dataInicio, fim: dataFim, motivo }]
+      if (tipo === 'periodo') {
+        horaInicio = '00:00'
+        horaFim = '23:59'
+        datas = getDateRange(dataInicio, dataFim).map(data => ({ inicio: data, fim: data, motivo }))
+      } else if (horaFim <= horaInicio) {
+        return showBloqueioError('O horario final deve ser maior que o inicial.')
+      } else {
+        datas = [{ inicio: dataInicio, fim: dataFim, motivo }]
+      }
     }
 
     const rows = datas.map(item => ({
       negocio_id: negocioId,
       profissional_id: profId,
       data: item.inicio,
-      data_inicio: item.inicio,
-      data_fim: item.fim,
       hora_inicio: horaInicio,
       hora_fim: horaFim,
       tipo,
@@ -698,7 +715,7 @@ async function saveBloqueio() {
 
     feedback.className = 'form-success'
     feedback.textContent = tipo === 'horario_especial'
-      ? `${rows.length} horário(s) especial(is) criado(s).`
+      ? `${rows.length} horario(s) especial(is) criado(s).`
       : `${rows.length} bloqueio(s) criado(s).`
     feedback.style.display = 'block'
     await loadBloqueios()
@@ -721,9 +738,9 @@ async function loadBloqueios() {
   const filtro = document.getElementById('bFiltro')?.value || 'todos'
   let query = sb
     .from('bloqueios')
-    .select('id, data, data_inicio, data_fim, hora_inicio, hora_fim, motivo, tipo, profissional_id, profissionais(nome)')
+    .select('id, data, hora_inicio, hora_fim, motivo, tipo, profissional_id, profissionais(nome)')
     .eq('negocio_id', negocioId)
-    .or(`data.gte.${today},data_fim.gte.${today}`)
+    .gte('data', today)
     .order('data', { ascending: true })
     .order('hora_inicio', { ascending: true })
     .limit(80)
@@ -743,8 +760,8 @@ async function loadBloqueios() {
   }
 
   container.innerHTML = '<div class="table-card">' + data.map(b => {
-    const inicio = b.data_inicio || b.data
-    const fim = b.data_fim || b.data || inicio
+    const inicio = b.data
+    const fim = b.data
     const dataLabel = formatBloqueioPeriodo(inicio, fim)
     const horarioLabel = b.tipo === 'horario_especial'
       ? `funciona ${b.hora_inicio?.slice(0,5) || '00:00'}-${b.hora_fim?.slice(0,5) || '23:59'}`
@@ -779,8 +796,8 @@ function tipoBloqueioLabel(tipo) {
   const labels = {
     feriado: 'Feriado',
     dia_unico: 'Bloqueio',
-    periodo: 'Período',
-    horario_especial: 'Horário especial',
+    periodo: 'Periodo',
+    horario_especial: 'Horario especial',
   }
   return labels[tipo] || 'Bloqueio'
 }
