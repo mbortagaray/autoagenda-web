@@ -58,6 +58,7 @@ function gerarPin(telefone) {
 
 // ---- STATE ----
 let config = null
+let avisosAgenda = []
 let state = {
   servico: null,
   profissional: null,
@@ -145,6 +146,38 @@ async function buscarAgendaProfissional(telefone, data) {
   return res.json()
 }
 
+async function fetchAvisosAgenda() {
+  if (!config?.negocio?.id) return []
+
+  const today = new Date().toISOString().split('T')[0]
+  const until = new Date()
+  until.setDate(until.getDate() + 60)
+  const untilStr = until.toISOString().split('T')[0]
+
+  const params = new URLSearchParams()
+  params.set('select', 'id,tipo,motivo,data,data_inicio,data_fim,hora_inicio,hora_fim,profissional_id,profissionais(nome)')
+  params.set('negocio_id', `eq.${config.negocio.id}`)
+  params.set('or', `(data.gte.${today},data_fim.gte.${today})`)
+  params.set('order', 'data.asc,hora_inicio.asc')
+  params.set('limit', '20')
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/bloqueios?${params}`, {
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+    },
+  })
+  if (!res.ok) return []
+
+  const rows = await res.json()
+  return rows
+    .filter(a => {
+      const inicio = a.data_inicio || a.data
+      return inicio && inicio <= untilStr
+    })
+    .slice(0, 3)
+}
+
 // ---- INIT ----
 async function init() {
   showLoading(true)
@@ -154,6 +187,8 @@ async function init() {
     aplicarHeader(config.negocio)
     aplicarBizInfo(config.negocio)
     renderServicos()
+    avisosAgenda = await fetchAvisosAgenda()
+    renderAvisosAgenda()
     iniciarFluxoAdaptativo()
     showLoading(false)
   } catch (e) {
@@ -200,6 +235,93 @@ function aplicarBizInfo(negocio) {
     document.getElementById('bizTelefone').style.display = 'none'
   }
   if (show || negocio.telefone) bar.style.display = 'block'
+}
+
+function renderAvisosAgenda() {
+  const container = document.getElementById('agendaAvisos')
+  if (!container || !avisosAgenda.length) return
+
+  container.style.display = 'block'
+  container.innerHTML = `
+    <section class="notice-panel">
+      <div class="notice-head">
+        <div class="notice-title">Avisos de agenda</div>
+        <div class="notice-count">Próximos 60 dias</div>
+      </div>
+      <div class="notice-list">
+        ${avisosAgenda.map(renderAvisoItem).join('')}
+      </div>
+    </section>
+  `
+}
+
+function renderAvisoItem(aviso) {
+  const inicio = aviso.data_inicio || aviso.data
+  const dateParts = getAvisoDateParts(inicio)
+  return `
+    <div class="notice-item">
+      <div class="notice-date">
+        <strong>${dateParts.dia}</strong>
+        <span>${dateParts.mes}</span>
+      </div>
+      <div>
+        <div class="notice-main">${getAvisoMensagem(aviso)}</div>
+        <div class="notice-sub">${getAvisoSubtitulo(aviso)}</div>
+      </div>
+    </div>
+  `
+}
+
+function getAvisoMensagem(aviso) {
+  const negocioNome = config?.negocio?.nome || 'O negócio'
+  const profNome = aviso.profissionais?.nome
+  const alvo = profNome || negocioNome
+  const inicio = aviso.data_inicio || aviso.data
+  const fim = aviso.data_fim || aviso.data || inicio
+  const periodo = fim && fim !== inicio
+    ? `de ${formatDateBR(inicio)} até ${formatDateBR(fim)}`
+    : `em ${formatDateBR(inicio)}`
+
+  if (aviso.tipo === 'horario_especial') {
+    return `<strong>${escapeHtml(alvo)}</strong> funciona em horário especial, das ${formatTime(aviso.hora_inicio)} às ${formatTime(aviso.hora_fim)}.`
+  }
+
+  if (aviso.tipo === 'periodo') {
+    const motivo = aviso.motivo || 'férias'
+    return `<strong>${escapeHtml(alvo)}</strong> está em ${escapeHtml(motivo.toLowerCase())} ${periodo}.`
+  }
+
+  if (aviso.tipo === 'feriado') {
+    return `<strong>${escapeHtml(negocioNome)}</strong> não atende ${periodo}${aviso.motivo ? `: ${escapeHtml(aviso.motivo)}` : ''}.`
+  }
+
+  return `<strong>${escapeHtml(alvo)}</strong> não atende ${periodo}${aviso.motivo ? `: ${escapeHtml(aviso.motivo)}` : ''}.`
+}
+
+function getAvisoSubtitulo(aviso) {
+  if (aviso.profissional_id) return 'Outros profissionais podem continuar atendendo normalmente.'
+  if (aviso.tipo === 'horario_especial') return 'Válido para todos os profissionais.'
+  return 'Válido para todo o estabelecimento.'
+}
+
+function getAvisoDateParts(dateStr) {
+  if (!dateStr) return { dia: '--', mes: '' }
+  const [, mes, dia] = dateStr.split('-')
+  const meses = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+  return { dia, mes: meses[Number(mes) - 1] || '' }
+}
+
+function formatTime(value) {
+  return String(value || '').slice(0, 5) || '--:--'
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
 }
 
 // ---- STEP 1: SERVICOS ----
