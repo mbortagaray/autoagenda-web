@@ -309,7 +309,7 @@ function getAvisoMensagem(aviso) {
 
   if (tipo === 'periodo') {
     const motivo = motivoLimpo || 'férias'
-    return `<strong>${escapeHtml(alvo)}</strong> está em ${escapeHtml(motivo.toLowerCase())} ${periodo}.`
+    return `<strong>${escapeHtml(alvo)}</strong> está em ${escapeHtml(motivo)} ${periodo}.`
   }
 
   if (motivoLimpo.toLowerCase().includes('feriado')) {
