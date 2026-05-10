@@ -1086,7 +1086,7 @@ async function goConsulta() {
     }
   }
   // Não tem sessão — mostrar tela de login
-  showScreen('stepLogin')
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('stepLogin').classList.add('active')
   updateProgress('consulta')
   window.scrollTo(0, 0)
 }
@@ -1185,14 +1185,14 @@ async function abrirMeusAgendamentos(session) {
     // Primeira vez — preencher nome se disponível
     const nomeInput = document.getElementById('inputNomeVincular')
     if (nomeInput && userMeta?.full_name) nomeInput.value = userMeta.full_name
-    showScreen('stepVincularTel')
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('stepVincularTel').classList.add('active')
     updateProgress('consulta')
     window.scrollTo(0, 0)
     return
   }
 
   // Tem telefone — ir direto para consulta
-  showScreen('stepConsulta')
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('stepConsulta').classList.add('active')
   updateProgress('consulta')
   consultaData = new Date()
   window.scrollTo(0, 0)
