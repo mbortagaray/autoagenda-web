@@ -159,7 +159,7 @@ async function fetchAvisosAgenda() {
   params.set('negocio_id', `eq.${config.negocio.id}`)
   params.set('data', `gte.${today}`)
   params.set('order', 'data.asc,hora_inicio.asc')
-  params.set('limit', '20')
+  params.set('limit', '120')
 
   const res = await fetch(`${SUPABASE_URL}/rest/v1/bloqueios?${params}`, {
     headers: {
@@ -239,9 +239,29 @@ function aplicarBizInfo(negocio) {
 function renderAvisosAgenda() {
   const container = document.getElementById('agendaAvisos')
   if (!container || !avisosAgenda.length) return
-  const avisos = groupAvisosAgenda(avisosAgenda).slice(0, 3)
+  const avisos = groupAvisosAgenda(avisosAgenda)
+  const visibleAvisos = avisos.slice(0, 2)
 
   container.style.display = 'block'
+  container.innerHTML = `
+    <section class="notice-panel">
+      <div class="notice-head">
+        <div class="notice-title">Avisos de agenda</div>
+        <div class="notice-count">Próximos 60 dias</div>
+      </div>
+      <div class="notice-list">
+        ${visibleAvisos.map(renderAvisoItem).join('')}
+      </div>
+      ${avisos.length > 2 ? '<button class="notice-more" onclick="showAllAvisosAgenda()">Ver todos os avisos</button>' : ''}
+    </section>
+  `
+}
+
+function showAllAvisosAgenda() {
+  const container = document.getElementById('agendaAvisos')
+  const avisos = groupAvisosAgenda(avisosAgenda)
+  if (!container || !avisos.length) return
+
   container.innerHTML = `
     <section class="notice-panel">
       <div class="notice-head">
