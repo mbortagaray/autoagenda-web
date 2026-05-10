@@ -6,6 +6,7 @@
 const SUPABASE_URL = 'https://vsyiwgxsbvjjloftpvkf.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzeWl3Z3hzYnZqamxvZnRwdmtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwOTA2NzgsImV4cCI6MjA5MDY2NjY3OH0.DJqO-Y248xCr5mrffKcG2ZQQ_dhRubjzaQmF4V6sO90'
 const FUNCTIONS_URL = SUPABASE_URL + '/functions/v1'
+const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null
 
 function getSlug() {
   const querySlug = new URLSearchParams(window.location.search).get('slug')
@@ -188,6 +189,17 @@ async function init() {
     renderServicos()
     avisosAgenda = await fetchAvisosAgenda()
     renderAvisosAgenda()
+
+    // Verificar callback de autenticação (Google OAuth ou magic link)
+    if (sb && (window.location.hash.includes('access_token') || new URLSearchParams(window.location.search).get('auth_callback'))) {
+      const { data: { session } } = await sb.auth.getSession()
+      if (session) {
+        showLoading(false)
+        await abrirMeusAgendamentos(session)
+        return
+      }
+    }
+
     iniciarFluxoAdaptativo()
     showLoading(false)
   } catch (e) {
@@ -1064,12 +1076,160 @@ function showNoInitialAvailability() {
   slotsWrap.innerHTML = '<div style="text-align:center;color:#8A7060;padding:20px">Nenhum horário disponível nos próximos dias</div>'
 }
 
-function goConsulta() {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
-  document.getElementById('stepConsulta').classList.add('active')
+async function goConsulta() {
+  // Verificar se já tem sessão ativa
+  if (sb) {
+    const { data: { session } } = await sb.auth.getSession()
+    if (session) {
+      await abrirMeusAgendamentos(session)
+      return
+    }
+  }
+  // Não tem sessão — mostrar tela de login
+  showScreen('stepLogin')
+  updateProgress('consulta')
+  window.scrollTo(0, 0)
+}
+
+async function loginGoogle() {
+  if (!sb) return
+  const errEl = document.getElementById('loginError')
+  errEl.style.display = 'none'
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.href + (window.location.href.includes('?') ? '&' : '?') + 'auth_callback=1'
+    }
+  })
+  if (error) {
+    errEl.textContent = 'Erro ao conectar com Google: ' + error.message
+    errEl.style.display = 'block'
+  }
+}
+
+async function loginEmail() {
+  if (!sb) return
+  const email = document.getElementById('inputLoginEmail').value.trim()
+  const errEl = document.getElementById('loginError')
+  errEl.style.display = 'none'
+
+  if (!email || !email.includes('@')) {
+    errEl.textContent = 'Digite um email válido'
+    errEl.style.display = 'block'
+    return
+  }
+
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href }
+  })
+
+  if (error) {
+    errEl.textContent = 'Erro: ' + error.message
+    errEl.style.display = 'block'
+    return
+  }
+
+  document.getElementById('emailSent').style.display = 'block'
+  document.getElementById('emailLoginForm').querySelector('button').style.display = 'none'
+}
+
+async function vincularTelefone() {
+  if (!sb) return
+  const tel = normalizePhone(document.getElementById('inputTelVincular').value)
+  const nome = document.getElementById('inputNomeVincular').value.trim()
+
+  if (tel.length < 10) {
+    alert('Digite um telefone válido')
+    return
+  }
+  if (!nome) {
+    alert('Digite seu nome completo')
+    return
+  }
+
+  const { data: { user } } = await sb.auth.getUser()
+  if (!user) return
+
+  // Salvar vínculo no metadata do usuário
+  await sb.auth.updateUser({ data: { telefone: tel, nome } })
+
+  // Criar/atualizar cliente no banco
+  const { data: clienteExist } = await fetch(
+    `${SUPABASE_URL}/rest/v1/clientes?negocio_id=eq.${config.negocio.id}&telefone=eq.${tel}`,
+    { headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY } }
+  ).then(r => r.json()).then(data => ({ data })).catch(() => ({ data: [] }))
+
+  if (!clienteExist?.length) {
+    await fetch(`${SUPABASE_URL}/rest/v1/clientes`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify({ negocio_id: config.negocio.id, nome, telefone: tel })
+    })
+  }
+
+  const { data: { session } } = await sb.auth.getSession()
+  await abrirMeusAgendamentos(session)
+}
+
+async function abrirMeusAgendamentos(session) {
+  const userMeta = session?.user?.user_metadata
+  const tel = userMeta?.telefone
+
+  if (!tel) {
+    // Primeira vez — preencher nome se disponível
+    const nomeInput = document.getElementById('inputNomeVincular')
+    if (nomeInput && userMeta?.full_name) nomeInput.value = userMeta.full_name
+    showScreen('stepVincularTel')
+    updateProgress('consulta')
+    window.scrollTo(0, 0)
+    return
+  }
+
+  // Tem telefone — ir direto para consulta
+  showScreen('stepConsulta')
   updateProgress('consulta')
   consultaData = new Date()
   window.scrollTo(0, 0)
+  await showMeusAgendamentosAuth(tel)
+}
+
+async function showMeusAgendamentosAuth(tel) {
+  const container = document.getElementById('meusAgendamentosContent')
+  container.innerHTML = '<div class="loading"><div class="spinner"></div>Buscando...</div>'
+
+  try {
+    const agendaProfissional = await buscarAgendaProfissional(tel, getConsultaDateStr())
+    if (agendaProfissional?.profissional) {
+      renderAgendaProfissional(agendaProfissional)
+      return
+    }
+
+    const result = await buscarMeusAgendamentos(tel)
+    if (!result.agendamentos || result.agendamentos.length === 0) {
+      container.innerHTML = '<div style="text-align:center;color:#8A7060;padding:16px">Nenhum agendamento encontrado</div>'
+      return
+    }
+
+    container.innerHTML = result.agendamentos.map(ag => {
+      const dataFmt = formatDateBR(ag.data)
+      return `
+        <div class="resumo-card" style="margin-bottom:10px">
+          <div class="resumo-row"><span class="resumo-label">Serviço</span><span class="resumo-value">${ag.servico}</span></div>
+          <div class="resumo-row"><span class="resumo-label">Profissional</span><span class="resumo-value">${ag.profissional}</span></div>
+          <div class="resumo-row"><span class="resumo-label">Data</span><span class="resumo-value">${dataFmt}</span></div>
+          <div class="resumo-row"><span class="resumo-label">Horário</span><span class="resumo-value">${ag.hora?.substring(0,5)}</span></div>
+        </div>
+      `
+    }).join('')
+  } catch (e) {
+    container.innerHTML = '<div style="color:#8B3A3A;text-align:center;padding:12px">Erro ao buscar agendamentos</div>'
+  }
 }
 
 function goBackFromDate() {
