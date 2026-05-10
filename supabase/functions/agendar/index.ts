@@ -164,8 +164,8 @@ Deno.serve(async (req) => {
       .eq('id', profissional_id)
       .single()
 
-    if (profData?.google_refresh_token && profData?.google_calendar_id) {
-      const accessToken = await getAccessToken(profData.google_refresh_token)
+    if (profData?.google_calendar_id) {
+      const accessToken = await getAccessToken(profData.google_refresh_token || undefined)
       if (accessToken) {
         const startHour = hora.split(':')
         const startDate = `${data}T${hora}:00`

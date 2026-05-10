@@ -2,6 +2,7 @@
 // Cancela agendamento validando janela de cancelamento
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getAccessToken, deleteCalendarEvent } from '../_shared/google-calendar.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -87,6 +88,26 @@ Deno.serve(async (req) => {
       JSON.stringify({ error: 'Erro ao cancelar', detalhe: errUpdate.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
+  }
+
+  // Remover evento do Google Calendar se existir
+  try {
+    if (agendamento.google_event_id && agendamento.profissional_id) {
+      const { data: profData } = await supabase
+        .from('profissionais')
+        .select('google_calendar_id, google_refresh_token')
+        .eq('id', agendamento.profissional_id)
+        .single()
+
+      if (profData?.google_calendar_id) {
+        const accessToken = await getAccessToken(profData.google_refresh_token || undefined)
+        if (accessToken) {
+          await deleteCalendarEvent(accessToken, profData.google_calendar_id, agendamento.google_event_id)
+        }
+      }
+    }
+  } catch (e) {
+    // Falha no calendar não bloqueia o cancelamento
   }
 
   return new Response(
