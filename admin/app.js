@@ -307,11 +307,11 @@ function renderProfissionais() {
         <div style="font-size:24px;width:40px;text-align:center">${p.avatar_emoji || '👤'}</div>
         <div class="table-main">
           <div class="table-name">${p.nome} ${!p.ativo ? '<span style="color:#86868b">(inativo)</span>' : ''}</div>
-          <div class="table-sub">${servNames || 'Sem serviços'} &bull; ${horariosCount} horários ${p.google_calendar_id ? '&bull; <span style="color:#34c759">Calendar conectado</span>' : ''}</div>
+          <div class="table-sub">${servNames || 'Sem serviços'} &bull; ${horariosCount} horários ${p.google_calendar_id ? '&bull; <span style="color:#34c759">📅 Calendar</span>' : ''}</div>
         </div>
         <div class="table-actions">
           <button onclick="editProf('${p.id}')">Editar</button>
-          <button onclick="connectGoogleCal('${p.id}')">${p.google_calendar_id ? '&#x2713; Calendar' : 'Google Calendar'}</button>
+
           <button onclick="toggleProf('${p.id}', ${p.ativo})">${p.ativo ? 'Desativar' : 'Ativar'}</button>
         </div>
       </div>
@@ -322,6 +322,18 @@ function renderProfissionais() {
 function showProfForm(id) {
   editingId = id || null
   document.getElementById('modalProfTitle').textContent = id ? 'Editar Profissional' : 'Novo Profissional'
+
+  // Mostrar email da service account
+  const serviceEmailEl = document.getElementById('pCalendarServiceEmail')
+  if (serviceEmailEl) {
+    fetch(`${SUPABASE_URL}/functions/v1/google-calendar-info`, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY }
+    }).then(r => r.json()).then(d => {
+      if (d.service_email) serviceEmailEl.textContent = d.service_email
+    }).catch(() => {
+      serviceEmailEl.textContent = 'autoagenda-web@possible-glass-475302-i2.iam.gserviceaccount.com'
+    })
+  }
 
   // Render servicos checkboxes
   const checkboxGrid = document.getElementById('pServicos')
@@ -344,6 +356,7 @@ function showProfForm(id) {
     document.getElementById('pEmoji').value = p.avatar_emoji || ''
     document.getElementById('pCor').value = p.avatar_cor || '#E8DDD0'
     document.getElementById('pFoto').value = p.foto_url || ''
+    document.getElementById('pCalendarId').value = p.google_calendar_id || ''
     // Show existing photo
     const preview = document.getElementById('pFotoPreview')
     if (p.foto_url) {
@@ -359,6 +372,7 @@ function showProfForm(id) {
     document.getElementById('pEmoji').value = '👤'
     document.getElementById('pCor').value = '#E8DDD0'
     document.getElementById('pFoto').value = ''
+    document.getElementById('pCalendarId').value = ''
     document.getElementById('pFotoPreview').style.display = 'none'
     // Default horarios: seg-sab manhã+tarde
     const defaultH = []
@@ -470,6 +484,7 @@ async function saveProf() {
     avatar_emoji: document.getElementById('pEmoji').value,
     avatar_cor: document.getElementById('pCor').value,
     foto_url: document.getElementById('pFoto').value || null,
+    google_calendar_id: document.getElementById('pCalendarId').value.trim() || null,
   }
 
   let profId = editingId
