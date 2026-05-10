@@ -286,7 +286,6 @@ function renderAvisoItem(aviso) {
       </div>
       <div>
         <div class="notice-main">${getAvisoMensagem(aviso)}</div>
-        <div class="notice-sub">${getAvisoSubtitulo(aviso)}</div>
       </div>
     </div>
   `

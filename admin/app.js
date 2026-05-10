@@ -709,18 +709,41 @@ async function saveBloqueio() {
       motivo: formatBloqueioMotivo(tipo, item.motivo || motivo),
     }))
 
+    const existing = await findBloqueioConflicts(rows, profId)
+    if (existing.length) return showBloqueioError('Já existe bloqueio neste período.')
+
     const { error } = await sb.from('bloqueios').insert(rows)
     if (error) return showBloqueioError(error.message)
 
-    feedback.className = 'form-success'
-    feedback.textContent = tipo === 'horario_especial'
-      ? `${rows.length} horario(s) especial(is) criado(s).`
-      : `${rows.length} bloqueio(s) criado(s).`
-    feedback.style.display = 'block'
+    clearBloqueioFeedback()
     await loadBloqueios()
   } catch (err) {
     showBloqueioError(err.message || 'Erro ao criar bloqueio.')
   }
+}
+
+async function findBloqueioConflicts(rows, profId) {
+  const dates = [...new Set(rows.map(r => r.data))]
+  if (!dates.length) return []
+
+  let query = sb
+    .from('bloqueios')
+    .select('id, data, hora_inicio, hora_fim, profissional_id')
+    .eq('negocio_id', negocioId)
+    .in('data', dates)
+
+  query = profId ? query.eq('profissional_id', profId) : query.is('profissional_id', null)
+
+  const { data, error } = await query
+  if (error) throw error
+
+  return (data || []).filter(existing =>
+    rows.some(row =>
+      row.data === existing.data &&
+      row.hora_inicio < (existing.hora_fim || '23:59') &&
+      row.hora_fim > (existing.hora_inicio || '00:00')
+    )
+  )
 }
 
 function showBloqueioError(message) {
