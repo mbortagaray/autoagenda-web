@@ -155,9 +155,9 @@ async function fetchAvisosAgenda() {
   const untilStr = until.toISOString().split('T')[0]
 
   const params = new URLSearchParams()
-  params.set('select', 'id,tipo,motivo,data,data_inicio,data_fim,hora_inicio,hora_fim,profissional_id,profissionais(nome)')
+  params.set('select', 'id,motivo,data,hora_inicio,hora_fim,profissional_id,profissionais(nome)')
   params.set('negocio_id', `eq.${config.negocio.id}`)
-  params.set('or', `(data.gte.${today},data_fim.gte.${today})`)
+  params.set('data', `gte.${today}`)
   params.set('order', 'data.asc,hora_inicio.asc')
   params.set('limit', '20')
 
@@ -172,7 +172,7 @@ async function fetchAvisosAgenda() {
   const rows = await res.json()
   return rows
     .filter(a => {
-      const inicio = a.data_inicio || a.data
+      const inicio = a.data
       return inicio && inicio <= untilStr
     })
     .slice(0, 3)
@@ -256,7 +256,7 @@ function renderAvisosAgenda() {
 }
 
 function renderAvisoItem(aviso) {
-  const inicio = aviso.data_inicio || aviso.data
+  const inicio = aviso.data
   const dateParts = getAvisoDateParts(inicio)
   return `
     <div class="notice-item">
@@ -276,32 +276,45 @@ function getAvisoMensagem(aviso) {
   const negocioNome = config?.negocio?.nome || 'O negócio'
   const profNome = aviso.profissionais?.nome
   const alvo = profNome || negocioNome
-  const inicio = aviso.data_inicio || aviso.data
-  const fim = aviso.data_fim || aviso.data || inicio
+  const tipo = getAvisoTipo(aviso)
+  const motivoLimpo = cleanAvisoMotivo(aviso.motivo)
+  const inicio = aviso.data
+  const fim = aviso.data || inicio
   const periodo = fim && fim !== inicio
     ? `de ${formatDateBR(inicio)} até ${formatDateBR(fim)}`
     : `em ${formatDateBR(inicio)}`
 
-  if (aviso.tipo === 'horario_especial') {
+  if (tipo === 'horario_especial') {
     return `<strong>${escapeHtml(alvo)}</strong> funciona em horário especial, das ${formatTime(aviso.hora_inicio)} às ${formatTime(aviso.hora_fim)}.`
   }
 
-  if (aviso.tipo === 'periodo') {
-    const motivo = aviso.motivo || 'férias'
+  if (tipo === 'periodo') {
+    const motivo = motivoLimpo || 'férias'
     return `<strong>${escapeHtml(alvo)}</strong> está em ${escapeHtml(motivo.toLowerCase())} ${periodo}.`
   }
 
-  if (aviso.tipo === 'feriado') {
-    return `<strong>${escapeHtml(negocioNome)}</strong> não atende ${periodo}${aviso.motivo ? `: ${escapeHtml(aviso.motivo)}` : ''}.`
+  if (motivoLimpo.toLowerCase().includes('feriado')) {
+    return `<strong>${escapeHtml(negocioNome)}</strong> não atende ${periodo}${motivoLimpo ? `: ${escapeHtml(motivoLimpo)}` : ''}.`
   }
 
-  return `<strong>${escapeHtml(alvo)}</strong> não atende ${periodo}${aviso.motivo ? `: ${escapeHtml(aviso.motivo)}` : ''}.`
+  return `<strong>${escapeHtml(alvo)}</strong> não atende ${periodo}${motivoLimpo ? `: ${escapeHtml(motivoLimpo)}` : ''}.`
 }
 
 function getAvisoSubtitulo(aviso) {
   if (aviso.profissional_id) return 'Outros profissionais podem continuar atendendo normalmente.'
-  if (aviso.tipo === 'horario_especial') return 'Válido para todos os profissionais.'
+  if (getAvisoTipo(aviso) === 'horario_especial') return 'Válido para todos os profissionais.'
   return 'Válido para todo o estabelecimento.'
+}
+
+function getAvisoTipo(aviso) {
+  const motivo = String(aviso.motivo || '')
+  if (motivo.startsWith('[horario_especial]')) return 'horario_especial'
+  if (motivo.startsWith('[periodo]')) return 'periodo'
+  return 'bloqueio'
+}
+
+function cleanAvisoMotivo(motivo) {
+  return String(motivo || '').replace(/^\[(periodo|horario_especial)\]\s*/, '')
 }
 
 function getAvisoDateParts(dateStr) {

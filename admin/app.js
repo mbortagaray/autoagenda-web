@@ -706,8 +706,7 @@ async function saveBloqueio() {
       data: item.inicio,
       hora_inicio: horaInicio,
       hora_fim: horaFim,
-      tipo,
-      motivo: item.motivo || motivo,
+      motivo: formatBloqueioMotivo(tipo, item.motivo || motivo),
     }))
 
     const { error } = await sb.from('bloqueios').insert(rows)
@@ -738,7 +737,7 @@ async function loadBloqueios() {
   const filtro = document.getElementById('bFiltro')?.value || 'todos'
   let query = sb
     .from('bloqueios')
-    .select('id, data, hora_inicio, hora_fim, motivo, tipo, profissional_id, profissionais(nome)')
+    .select('id, data, hora_inicio, hora_fim, motivo, profissional_id, profissionais(nome)')
     .eq('negocio_id', negocioId)
     .gte('data', today)
     .order('data', { ascending: true })
@@ -763,14 +762,15 @@ async function loadBloqueios() {
     const inicio = b.data
     const fim = b.data
     const dataLabel = formatBloqueioPeriodo(inicio, fim)
-    const horarioLabel = b.tipo === 'horario_especial'
+    const tipo = getBloqueioTipoFromMotivo(b.motivo)
+    const horarioLabel = tipo === 'horario_especial'
       ? `funciona ${b.hora_inicio?.slice(0,5) || '00:00'}-${b.hora_fim?.slice(0,5) || '23:59'}`
       : `${b.hora_inicio?.slice(0,5) || '00:00'}-${b.hora_fim?.slice(0,5) || '23:59'}`
     const escopoLabel = b.profissional_id ? (b.profissionais?.nome || 'Profissional') : `Todo o ${negocio?.nome || 'negócio'}`
     return `
       <div class="table-row">
         <div class="table-main">
-          <div class="table-name">${b.motivo || tipoBloqueioLabel(b.tipo)} &bull; ${dataLabel}</div>
+          <div class="table-name">${cleanBloqueioMotivo(b.motivo) || tipoBloqueioLabel(tipo)} &bull; ${dataLabel}</div>
           <div class="table-sub">${escopoLabel} &bull; ${horarioLabel}</div>
         </div>
         <div class="table-actions">
@@ -800,6 +800,22 @@ function tipoBloqueioLabel(tipo) {
     horario_especial: 'Horario especial',
   }
   return labels[tipo] || 'Bloqueio'
+}
+
+function formatBloqueioMotivo(tipo, motivo) {
+  if (tipo === 'periodo') return `[periodo] ${motivo}`
+  if (tipo === 'horario_especial') return `[horario_especial] ${motivo}`
+  return motivo
+}
+
+function getBloqueioTipoFromMotivo(motivo) {
+  if (String(motivo || '').startsWith('[horario_especial]')) return 'horario_especial'
+  if (String(motivo || '').startsWith('[periodo]')) return 'periodo'
+  return 'dia_unico'
+}
+
+function cleanBloqueioMotivo(motivo) {
+  return String(motivo || '').replace(/^\[(periodo|horario_especial)\]\s*/, '')
 }
 
 async function deleteBloqueio(id) {
