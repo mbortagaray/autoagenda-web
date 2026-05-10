@@ -726,13 +726,19 @@ async function findBloqueioConflicts(rows, profId) {
   const dates = [...new Set(rows.map(r => r.data))]
   if (!dates.length) return []
 
+  // Busca bloqueios do profissional E do negócio inteiro (profissional_id null)
   let query = sb
     .from('bloqueios')
     .select('id, data, hora_inicio, hora_fim, profissional_id')
     .eq('negocio_id', negocioId)
     .in('data', dates)
 
-  query = profId ? query.eq('profissional_id', profId) : query.is('profissional_id', null)
+  // Se é bloqueio de profissional, verifica conflito com o profissional E com negócio todo
+  // Se é bloqueio de negócio todo, verifica conflito com qualquer bloqueio existente
+  if (profId) {
+    query = query.or(`profissional_id.eq.${profId},profissional_id.is.null`)
+  }
+  // se profId é null (negócio todo), busca todos os bloqueios do negócio
 
   const { data, error } = await query
   if (error) throw error
