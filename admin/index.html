@@ -187,15 +187,6 @@
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label">Serviços que realiza</label>
-            <div class="checkbox-grid" id="pServicos"></div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Horários de atendimento</label>
-            <div id="pHorarios"></div>
-            <button class="btn btn-ghost btn-sm" onclick="addHorarioRow()" style="margin-top:8px">+ Adicionar horário</button>
-          </div>
-          <div class="form-group">
             <label class="form-label">Google Calendar</label>
             <input class="form-input" id="pCalendarId" placeholder="ID da agenda (ex: ana@gmail.com)">
             <div style="margin-top:6px;font-size:12px;color:#86868b;background:#f5f5f7;padding:10px;border-radius:8px;line-height:1.5">
@@ -203,6 +194,15 @@
               <strong id="pCalendarServiceEmail" style="color:#1a1a2e">carregando...</strong>
               com permissão <strong>Fazer alterações nos eventos</strong>.
             </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Serviços que realiza</label>
+            <div class="checkbox-grid" id="pServicos"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Horários de atendimento</label>
+            <div id="pHorarios"></div>
+            <button class="btn btn-ghost btn-sm" onclick="addHorarioRow()" style="margin-top:8px">+ Adicionar horário</button>
           </div>
           <div class="modal-actions">
             <button class="btn btn-ghost" onclick="closeModal('modalProf')">Cancelar</button>
