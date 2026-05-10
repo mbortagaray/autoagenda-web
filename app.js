@@ -175,7 +175,6 @@ async function fetchAvisosAgenda() {
       const inicio = a.data
       return inicio && inicio <= untilStr
     })
-    .slice(0, 3)
 }
 
 // ---- INIT ----
@@ -240,6 +239,7 @@ function aplicarBizInfo(negocio) {
 function renderAvisosAgenda() {
   const container = document.getElementById('agendaAvisos')
   if (!container || !avisosAgenda.length) return
+  const avisos = groupAvisosAgenda(avisosAgenda).slice(0, 3)
 
   container.style.display = 'block'
   container.innerHTML = `
@@ -249,14 +249,14 @@ function renderAvisosAgenda() {
         <div class="notice-count">Próximos 60 dias</div>
       </div>
       <div class="notice-list">
-        ${avisosAgenda.map(renderAvisoItem).join('')}
+        ${avisos.map(renderAvisoItem).join('')}
       </div>
     </section>
   `
 }
 
 function renderAvisoItem(aviso) {
-  const inicio = aviso.data
+  const inicio = aviso.data_inicio || aviso.data
   const dateParts = getAvisoDateParts(inicio)
   return `
     <div class="notice-item">
@@ -278,8 +278,8 @@ function getAvisoMensagem(aviso) {
   const alvo = profNome || negocioNome
   const tipo = getAvisoTipo(aviso)
   const motivoLimpo = cleanAvisoMotivo(aviso.motivo)
-  const inicio = aviso.data
-  const fim = aviso.data || inicio
+  const inicio = aviso.data_inicio || aviso.data
+  const fim = aviso.data_fim || aviso.data || inicio
   const periodo = fim && fim !== inicio
     ? `de ${formatDateBR(inicio)} até ${formatDateBR(fim)}`
     : `em ${formatDateBR(inicio)}`
@@ -298,6 +298,48 @@ function getAvisoMensagem(aviso) {
   }
 
   return `<strong>${escapeHtml(alvo)}</strong> não atende ${periodo}${motivoLimpo ? `: ${escapeHtml(motivoLimpo)}` : ''}.`
+}
+
+function groupAvisosAgenda(rows) {
+  const grouped = new Map()
+  for (const row of rows || []) {
+    const key = [
+      row.profissional_id || 'negocio',
+      row.hora_inicio || '',
+      row.hora_fim || '',
+      row.motivo || '',
+    ].join('|')
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        ...row,
+        dates: [],
+        data_inicio: row.data,
+        data_fim: row.data,
+      })
+    }
+    grouped.get(key).dates.push(row.data)
+  }
+
+  return [...grouped.values()].flatMap(group => {
+    const dates = [...new Set(group.dates)].sort()
+    const chunks = []
+    let current = null
+    for (const date of dates) {
+      if (!current || !isNextAvisoDate(current.data_fim, date)) {
+        current = { ...group, data_inicio: date, data_fim: date }
+        chunks.push(current)
+      } else {
+        current.data_fim = date
+      }
+    }
+    return chunks
+  }).sort((a, b) => a.data_inicio.localeCompare(b.data_inicio))
+}
+
+function isNextAvisoDate(prev, next) {
+  const dt = new Date(prev + 'T12:00:00')
+  dt.setDate(dt.getDate() + 1)
+  return dt.toISOString().split('T')[0] === next
 }
 
 function getAvisoSubtitulo(aviso) {

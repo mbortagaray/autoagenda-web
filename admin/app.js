@@ -758,9 +758,10 @@ async function loadBloqueios() {
     return
   }
 
-  container.innerHTML = '<div class="table-card">' + data.map(b => {
-    const inicio = b.data
-    const fim = b.data
+  const grupos = groupBloqueios(data)
+  container.innerHTML = '<div class="table-card">' + grupos.map(b => {
+    const inicio = b.data_inicio
+    const fim = b.data_fim
     const dataLabel = formatBloqueioPeriodo(inicio, fim)
     const tipo = getBloqueioTipoFromMotivo(b.motivo)
     const horarioLabel = tipo === 'horario_especial'
@@ -774,11 +775,57 @@ async function loadBloqueios() {
           <div class="table-sub">${escopoLabel} &bull; ${horarioLabel}</div>
         </div>
         <div class="table-actions">
-          <button onclick="deleteBloqueio('${b.id}')">Remover</button>
+          <button onclick="deleteBloqueioGrupo('${b.ids.join(',')}')">Remover</button>
         </div>
       </div>
     `
   }).join('') + '</div>'
+}
+
+function groupBloqueios(rows) {
+  const grouped = new Map()
+  for (const row of rows || []) {
+    const key = [
+      row.profissional_id || 'negocio',
+      row.hora_inicio || '',
+      row.hora_fim || '',
+      row.motivo || '',
+    ].join('|')
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        ...row,
+        ids: [],
+        dates: [],
+        data_inicio: row.data,
+        data_fim: row.data,
+      })
+    }
+    const group = grouped.get(key)
+    group.ids.push(row.id)
+    group.dates.push(row.data)
+  }
+
+  return [...grouped.values()].flatMap(group => {
+    const dates = [...new Set(group.dates)].sort()
+    const chunks = []
+    let current = null
+    for (const date of dates) {
+      if (!current || !isNextDate(current.data_fim, date)) {
+        current = { ...group, ids: [], data_inicio: date, data_fim: date }
+        chunks.push(current)
+      } else {
+        current.data_fim = date
+      }
+      current.ids.push(...group.ids.filter((_, i) => group.dates[i] === date))
+    }
+    return chunks
+  }).sort((a, b) => a.data_inicio.localeCompare(b.data_inicio))
+}
+
+function isNextDate(prev, next) {
+  const dt = new Date(prev + 'T12:00:00')
+  dt.setDate(dt.getDate() + 1)
+  return dt.toISOString().split('T')[0] === next
 }
 
 function formatDateBr(dateStr) {
@@ -821,6 +868,16 @@ function cleanBloqueioMotivo(motivo) {
 async function deleteBloqueio(id) {
   if (!confirm('Remover este bloqueio?')) return
   const { error } = await sb.from('bloqueios').delete().eq('id', id)
+  if (error) return alert('Erro ao remover bloqueio: ' + error.message)
+  clearBloqueioFeedback()
+  await loadBloqueios()
+}
+
+async function deleteBloqueioGrupo(idsCsv) {
+  const ids = idsCsv.split(',').filter(Boolean)
+  if (!ids.length) return
+  if (!confirm(ids.length > 1 ? 'Remover este período inteiro?' : 'Remover este bloqueio?')) return
+  const { error } = await sb.from('bloqueios').delete().in('id', ids)
   if (error) return alert('Erro ao remover bloqueio: ' + error.message)
   clearBloqueioFeedback()
   await loadBloqueios()
