@@ -9,6 +9,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 })
 
 let negocios = []
+let adminUsersCount = 0
 let editingNegocioId = null
 
 // Profissionais
@@ -132,17 +133,47 @@ function closeModal(id) {
 
 // ---- NEGÓCIOS ----
 async function loadNegocios() {
-  const { data } = await sb.from('negocios').select('*').order('nome')
+  const [{ data }, adminResult] = await Promise.all([
+    sb.from('negocios').select('*').order('nome'),
+    sb.from('admin_users').select('id', { count: 'exact', head: true }).neq('role', 'superadmin'),
+  ])
   negocios = data || []
+  adminUsersCount = adminResult.count || 0
+  renderNegocioStats()
   renderNegocios(negocios)
 }
 
 function filterNegocios() {
   const q = document.getElementById('negocioSearch').value.toLowerCase()
+  const status = document.getElementById('negocioStatusFilter')?.value || 'todos'
   const filtered = negocios.filter(n =>
-    n.nome.toLowerCase().includes(q) || (n.slug || '').toLowerCase().includes(q)
+    (
+      n.nome.toLowerCase().includes(q)
+      || (n.slug || '').toLowerCase().includes(q)
+      || (n.cidade || '').toLowerCase().includes(q)
+    )
+    && (
+      status === 'todos'
+      || (status === 'ativos' && n.ativo !== false)
+      || (status === 'inativos' && n.ativo === false)
+    )
   )
   renderNegocios(filtered)
+}
+
+function renderNegocioStats() {
+  const ativos = negocios.filter(n => n.ativo !== false).length
+  const inativos = negocios.filter(n => n.ativo === false).length
+  document.getElementById('statAtivos').textContent = ativos
+  document.getElementById('statInativos').textContent = inativos
+  document.getElementById('statAdmins').textContent = adminUsersCount
+}
+
+function formatDateBR(dateStr) {
+  if (!dateStr) return ''
+  const dt = new Date(dateStr)
+  if (Number.isNaN(dt.getTime())) return ''
+  return dt.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
 }
 
 function renderNegocios(list) {
@@ -152,19 +183,18 @@ function renderNegocios(list) {
     return
   }
   cont.innerHTML = list.map(n => `
-    <div class="table-row">
+    <div class="table-row negocio-row">
       <div class="table-main">
         <div class="table-name">${n.nome}</div>
         <div class="table-sub">
           <span class="slug-chip">/${n.slug}</span>
           ${n.cidade ? `<span>${n.cidade}</span>` : ''}
           ${n.telefone ? `<span>${formatPhone(n.telefone)}</span>` : ''}
+          ${n.created_at ? `<span>Criado em ${formatDateBR(n.created_at)}</span>` : ''}
         </div>
       </div>
+      <span class="status-badge ${n.ativo ? 'active' : 'inactive'}">${n.ativo ? 'Ativo' : 'Inativo'}</span>
       <div class="table-actions">
-        <span class="status-badge ${n.ativo ? 'active' : 'inactive'}">${n.ativo ? 'Ativo' : 'Inativo'}</span>
-        <button class="btn btn-sm btn-ghost" onclick="editNegocio('${n.id}')">Editar</button>
-        <button class="btn btn-sm btn-ghost" onclick="gerenciarProfissionais('${n.id}')">Profissionais</button>
         <button class="btn btn-sm btn-accent" onclick="entrarComoAdmin('${n.id}')">⚡ Entrar como admin</button>
         <button class="btn btn-sm ${n.ativo ? 'btn-danger' : 'btn-primary'}" onclick="toggleNegocio('${n.id}', ${n.ativo})">
           ${n.ativo ? 'Desativar' : 'Ativar'}

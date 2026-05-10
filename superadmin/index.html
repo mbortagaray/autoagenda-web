@@ -6,7 +6,7 @@
   <title>AutoAgenda — Super Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="stylesheet" href="/superadmin/style.css?v=2">
+  <link rel="stylesheet" href="/superadmin/style.css?v=3">
 </head>
 <body>
 
@@ -40,10 +40,6 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         Negócios
       </a>
-      <a class="nav-item" data-tab="profissionais" onclick="switchTab('profissionais')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-        Profissionais
-      </a>
       <a class="nav-item" data-tab="usuarios" onclick="switchTab('usuarios')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Usuários
@@ -70,10 +66,30 @@
         <h1>Negócios</h1>
         <button class="btn btn-primary btn-sm" onclick="showNegocioForm()">+ Novo negócio</button>
       </div>
-      <div class="search-bar">
-        <input class="form-input" id="negocioSearch" placeholder="Buscar por nome ou slug..." oninput="filterNegocios()">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Ativos</div>
+          <div class="stat-value" id="statAtivos">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Inativos</div>
+          <div class="stat-value" id="statInativos">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Admins</div>
+          <div class="stat-value" id="statAdmins">0</div>
+        </div>
+      </div>
+      <div class="negocios-toolbar">
+        <input class="form-input" id="negocioSearch" placeholder="Buscar por nome, slug ou cidade..." oninput="filterNegocios()">
+        <select class="form-input" id="negocioStatusFilter" onchange="filterNegocios()">
+          <option value="todos">Todos</option>
+          <option value="ativos">Ativos</option>
+          <option value="inativos">Inativos</option>
+        </select>
       </div>
       <div id="negociosContent"></div>
+      <p class="negocios-note">Serviços, profissionais, horários, Google Calendar, bloqueios e configurações operacionais ficam dentro do admin do negócio, acessado por “Entrar como admin”.</p>
     </div>
 
     <!-- TAB: PROFISSIONAIS -->
@@ -273,6 +289,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/superadmin/app.js?v=8"></script>
+<script src="/superadmin/app.js?v=9"></script>
 </body>
 </html>

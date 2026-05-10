@@ -150,6 +150,10 @@ body {
   .content { margin-left: 0; padding: 70px 16px 24px; }
   .form-row { flex-direction: column; }
   .table-actions { flex-wrap: wrap; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .negocios-toolbar { grid-template-columns: 1fr; }
+  .table-row.negocio-row { grid-template-columns: 1fr; align-items: flex-start; }
+  .table-row.negocio-row .table-actions { justify-content: flex-start; }
 }
 
 /* TABS */
@@ -165,6 +169,60 @@ body {
 
 /* SEARCH */
 .search-bar { margin-bottom: 16px; }
+
+/* NEGOCIOS DASHBOARD */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.stat-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  min-height: 88px;
+}
+.stat-label {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.stat-value {
+  color: #050816;
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 700;
+}
+.negocios-toolbar {
+  display: grid;
+  grid-template-columns: 1fr 150px;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.table-row.negocio-row {
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) 90px 430px;
+  align-items: center;
+  gap: 14px;
+}
+.table-row.negocio-row .status-badge {
+  justify-self: start;
+}
+.table-row.negocio-row .status-badge.inactive {
+  background: #f0f0f5;
+  color: #5f6473;
+}
+.negocios-note {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+  margin-top: 16px;
+}
 
 /* TABLE ROWS */
 .table-row {
@@ -396,3 +454,10 @@ body {
 /* Botão entrar como admin */
 .btn-accent { background: #1a73e8; color: white; border: none; }
 .btn-accent:hover { background: #1557b0; }
+
+@media (max-width: 768px) {
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .negocios-toolbar { grid-template-columns: 1fr; }
+  .table-row.negocio-row { grid-template-columns: 1fr; align-items: flex-start; }
+  .table-row.negocio-row .table-actions { justify-content: flex-start; }
+}
