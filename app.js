@@ -97,7 +97,11 @@ async function fetchHorarios(profissionalId, data, duracaoMin) {
 async function criarAgendamento() {
   const res = await fetch(`${FUNCTIONS_URL}/agendar`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'apikey': SUPABASE_ANON_KEY,
+    },
     body: JSON.stringify({
       negocio_id: config.negocio.id,
       profissional_id: state.profissional,
