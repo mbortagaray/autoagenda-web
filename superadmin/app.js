@@ -310,7 +310,7 @@ async function entrarComoAdmin(negocioId) {
     return
   }
 
-  window.open(result.url, '_blank')
+  window.location.href = result.url
 }
 
 // ---- PROFISSIONAIS ----
