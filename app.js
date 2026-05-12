@@ -67,6 +67,7 @@ let state = {
   hora: null,
   nome: '',
   tel: '',
+  email: '',
   pin: '',
   mesAtual: new Date(),
   slotsData: null,
@@ -109,6 +110,7 @@ async function criarAgendamento() {
       hora: state.hora,
       cliente_nome: state.nome,
       cliente_telefone: state.tel,
+      cliente_email: state.email,
       // PIN não enviado — gerado no servidor a partir do telefone
     }),
   })
@@ -798,7 +800,6 @@ function checkStep4() {
   const telOk = tel.length >= 10
   const nomeInput = document.getElementById('inputNome').value.trim()
   const nomeOk = state.clienteEncontrado || nomeInput.length >= 2
-
   if (nomeInput) state.nome = nomeInput
   state.tel = document.getElementById('inputTel').value
   state.pin = gerarPin(tel)
@@ -1014,10 +1015,12 @@ async function goStep(n) {
           // Já tem telefone — pula step4 direto para step5
           state.tel = tel
           state.nome = session.user?.user_metadata?.nome || session.user?.user_metadata?.full_name || ''
+          state.email = session.user?.email || ''
           state.clienteEncontrado = true
           goStep(5)
           return
         } else {
+          state.email = session.user?.email || ''
           // Logado mas sem telefone — mostrar campo telefone
           document.getElementById('step4Login').style.display = 'none'
           document.getElementById('step4Tel').style.display = 'block'
@@ -1363,7 +1366,7 @@ function goBackFromDate() {
 }
 
 function reiniciar() {
-  state = { servico: null, profissional: null, data: null, hora: null, nome: '', tel: '', pin: '', mesAtual: new Date(), slotsData: null, clienteEncontrado: false, proximaData: null, hojeEncerrado: false, diaLotado: false }
+  state = { servico: null, profissional: null, data: null, hora: null, nome: '', tel: '', email: '', pin: '', mesAtual: new Date(), slotsData: null, clienteEncontrado: false, proximaData: null, hojeEncerrado: false, diaLotado: false }
   document.getElementById('inputNome').value = ''
   document.getElementById('inputTel').value = ''
   document.getElementById('clienteFeedback').textContent = ''

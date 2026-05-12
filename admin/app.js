@@ -198,7 +198,20 @@ async function loadAgenda() {
 
 async function cancelarAg(id) {
   if (!confirm('Cancelar este agendamento?')) return
-  await sb.from('agendamentos').update({ status: 'cancelado' }).eq('id', id)
+  const { data: { session } } = await sb.auth.getSession()
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/cancelar`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ agendamento_id: id, origem: 'admin' }),
+  })
+  const result = await res.json().catch(() => ({}))
+  if (!res.ok || result.error) {
+    alert(result.error || 'Erro ao cancelar agendamento')
+    return
+  }
   loadAgenda()
 }
 
@@ -353,6 +366,7 @@ function showProfForm(id) {
     const p = profissionais.find(x => x.id === id)
     document.getElementById('pNome').value = p.nome
     document.getElementById('pTel').value = formatPhone(p.telefone || '')
+    document.getElementById('pEmail').value = p.email || ''
     document.getElementById('pEmoji').value = p.avatar_emoji || ''
     document.getElementById('pCor').value = p.avatar_cor || '#E8DDD0'
     document.getElementById('pFoto').value = p.foto_url || ''
@@ -369,6 +383,7 @@ function showProfForm(id) {
   } else {
     document.getElementById('pNome').value = ''
     document.getElementById('pTel').value = ''
+    document.getElementById('pEmail').value = ''
     document.getElementById('pEmoji').value = '👤'
     document.getElementById('pCor').value = '#E8DDD0'
     document.getElementById('pFoto').value = ''
@@ -481,6 +496,7 @@ async function saveProf() {
     negocio_id: negocioId,
     nome: document.getElementById('pNome').value,
     telefone: normalizePhone(document.getElementById('pTel').value) || null,
+    email: document.getElementById('pEmail').value.trim() || null,
     avatar_emoji: document.getElementById('pEmoji').value,
     avatar_cor: document.getElementById('pCor').value,
     foto_url: document.getElementById('pFoto').value || null,
@@ -984,6 +1000,9 @@ function loadConfig() {
   document.getElementById('cfgEndereco').value = negocio.endereco || ''
   document.getElementById('cfgCidade').value = negocio.cidade || ''
   document.getElementById('cfgMaps').value = negocio.google_maps_url || ''
+  document.getElementById('cfgEmailRemetente').value = negocio.email_remetente || ''
+  document.getElementById('cfgEmailRemetenteNome').value = negocio.email_remetente_nome || ''
+  document.getElementById('cfgEmailNotificacoes').value = String(negocio.email_notificacoes_ativas !== false)
   document.getElementById('cfgCorPrimaria').value = negocio.cor_primaria || '#3D2B1F'
   document.getElementById('cfgCorSecundaria').value = negocio.cor_secundaria || '#C4947A'
   document.getElementById('cfgCorFundo').value = negocio.cor_fundo || '#F9F5F0'
@@ -997,6 +1016,9 @@ async function saveConfig() {
     endereco: document.getElementById('cfgEndereco').value,
     cidade: document.getElementById('cfgCidade').value,
     google_maps_url: document.getElementById('cfgMaps').value,
+    email_remetente: document.getElementById('cfgEmailRemetente').value.trim() || null,
+    email_remetente_nome: document.getElementById('cfgEmailRemetenteNome').value.trim() || null,
+    email_notificacoes_ativas: document.getElementById('cfgEmailNotificacoes').value === 'true',
     cor_primaria: document.getElementById('cfgCorPrimaria').value,
     cor_secundaria: document.getElementById('cfgCorSecundaria').value,
     cor_fundo: document.getElementById('cfgCorFundo').value,

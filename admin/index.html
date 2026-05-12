@@ -161,11 +161,15 @@
               <label class="form-label">Nome</label>
               <input class="form-input" id="pNome" placeholder="Ana Costa">
             </div>
-            <div class="form-group">
-              <label class="form-label">Telefone</label>
-              <input class="form-input" id="pTel" placeholder="(51) 99999-9999" oninput="maskPhoneInput(this)" onblur="normalizePhoneInput(this)">
-            </div>
+          <div class="form-group">
+            <label class="form-label">Telefone</label>
+            <input class="form-input" id="pTel" placeholder="(51) 99999-9999" oninput="maskPhoneInput(this)" onblur="normalizePhoneInput(this)">
           </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-input" type="email" id="pEmail" placeholder="profissional@email.com">
+          </div>
+        </div>
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Emoji</label>
@@ -325,6 +329,23 @@
           <label class="form-label">Google Maps URL</label>
           <input class="form-input" id="cfgMaps" placeholder="https://maps.google.com/...">
         </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Email remetente</label>
+            <input class="form-input" type="email" id="cfgEmailRemetente" placeholder="contato@seudominio.com.br">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nome do remetente</label>
+            <input class="form-input" id="cfgEmailRemetenteNome" placeholder="Espaço Bella">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notificações por email</label>
+          <select class="form-input" id="cfgEmailNotificacoes">
+            <option value="true">Ativadas</option>
+            <option value="false">Desativadas</option>
+          </select>
+        </div>
       </div>
       <div class="config-section">
         <h2>Cores do site</h2>
@@ -359,6 +380,6 @@
 
 <script src="impersonation.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=9"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>
