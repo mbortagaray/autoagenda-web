@@ -200,30 +200,30 @@ async function init() {
         const userMeta = session.user?.user_metadata
         const tel = userMeta?.telefone
 
-        // Se veio de callback de auth E não tem telefone → pedir telefone
-        if (window.location.hash.includes('access_token') && !tel) {
+        // Se veio de callback de auth com #step4 → voltar para step4
+        if (window.location.hash.includes('step4') || window.location.hash.includes('access_token')) {
+          iniciarFluxoAdaptativo()
           showLoading(false)
-          await abrirMeusAgendamentos(session)
+          // Aguardar render e ir para step4
+          setTimeout(() => goStep(4), 300)
           return
         }
 
-        // Se tem sessão → preencher dados e ir para agendamento
+        // Se tem sessão com telefone → preencher dados
         if (tel) {
           state.tel = tel
           state.nome = userMeta?.nome || userMeta?.full_name || ''
           state.clienteEncontrado = true
         }
 
-        // Mostrar step1 normalmente
         iniciarFluxoAdaptativo()
         showLoading(false)
         return
       }
     }
 
-    // Sem sessão → mostrar step0 (login)
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
-    document.getElementById('step0').classList.add('active')
+    // Sem sessão → mostrar agendamento normalmente
+    iniciarFluxoAdaptativo()
     showLoading(false)
   } catch (e) {
     document.getElementById('loadingScreen').innerHTML =
@@ -1004,6 +1004,32 @@ function goStep(n) {
     }
     renderProfs()
   }
+  if (n === 4) {
+    // Verificar sessão ao entrar no step4
+    if (sb) {
+      const { data: { session } } = await sb.auth.getSession()
+      if (session) {
+        const tel = session.user?.user_metadata?.telefone
+        if (tel) {
+          // Já tem telefone — pula step4 direto para step5
+          state.tel = tel
+          state.nome = session.user?.user_metadata?.nome || session.user?.user_metadata?.full_name || ''
+          state.clienteEncontrado = true
+          goStep(5)
+          return
+        } else {
+          // Logado mas sem telefone — mostrar campo telefone
+          document.getElementById('step4Login').style.display = 'none'
+          document.getElementById('step4Tel').style.display = 'block'
+          document.getElementById('btnStep4').disabled = true
+        }
+      } else {
+        // Não logado — mostrar Google/email
+        document.getElementById('step4Login').style.display = 'block'
+        document.getElementById('step4Tel').style.display = 'none'
+      }
+    }
+  }
   if (n === 3) {
     renderDateContext()
     // Reset ao entrar: nenhum dia selecionado, horários ocultos
@@ -1101,12 +1127,12 @@ function showNoInitialAvailability() {
 
 async function loginGoogleAgendar() {
   if (!sb) return
-  const errEl = document.getElementById('loginError0')
+  const errEl = document.getElementById('loginError4') || document.getElementById('loginError0')
   if (errEl) errEl.style.display = 'none'
   const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: window.location.href
+      redirectTo: window.location.href + '#step4'
     }
   })
   if (error && errEl) {
@@ -1137,6 +1163,31 @@ async function loginEmailAgendar() {
   }
 
   const sentEl = document.getElementById('emailSent0')
+  if (sentEl) sentEl.style.display = 'block'
+}
+
+async function loginEmailAgendar4() {
+  if (!sb) return
+  const email = document.getElementById('inputLoginEmail4').value.trim()
+  const errEl = document.getElementById('loginError4')
+  if (errEl) errEl.style.display = 'none'
+
+  if (!email || !email.includes('@')) {
+    if (errEl) { errEl.textContent = 'Digite um email válido'; errEl.style.display = 'block' }
+    return
+  }
+
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href }
+  })
+
+  if (error) {
+    if (errEl) { errEl.textContent = 'Erro: ' + error.message; errEl.style.display = 'block' }
+    return
+  }
+
+  const sentEl = document.getElementById('emailSent4')
   if (sentEl) sentEl.style.display = 'block'
 }
 
