@@ -171,7 +171,31 @@
       <div class="section-hint">Confira os detalhes antes de finalizar</div>
       <div class="error-msg" id="errConfirm"></div>
       <div class="resumo-card" id="resumoCard"></div>
-      <button class="btn btn-primary" onclick="confirmar()">Agendar agora</button>
+
+      <!-- Opções de pagamento (aparece se profissional aceita Pix) -->
+      <div id="pixOpcoes" style="display:none;margin-top:16px">
+        <div style="font-size:13px;color:#8A7060;margin-bottom:12px;text-align:center">Como deseja pagar?</div>
+        <button class="btn btn-primary" onclick="confirmarComPix()" style="width:100%;margin-bottom:8px">
+          💳 Pagar agora com Pix
+        </button>
+        <button class="btn btn-ghost" onclick="confirmar()" style="width:100%">
+          Pagar no local
+        </button>
+      </div>
+
+      <!-- Botão normal (sem Pix) -->
+      <button class="btn btn-primary" id="btnAgendar" onclick="confirmar()" style="margin-top:16px">Agendar agora</button>
+
+      <!-- QR Code Pix -->
+      <div id="pixQrCode" style="display:none;text-align:center;margin-top:16px">
+        <div style="font-size:13px;color:#8A7060;margin-bottom:8px">Escaneie o QR Code para pagar</div>
+        <img id="pixQrImg" style="width:200px;height:200px;border:1px solid #e8e0d8;border-radius:8px">
+        <div style="margin-top:8px;font-size:12px;color:#8A7060">Pix copia e cola:</div>
+        <div id="pixCopiaECola" style="font-size:11px;background:#f5f5f5;padding:8px;border-radius:6px;word-break:break-all;margin-top:4px;cursor:pointer" onclick="copiarPix()"></div>
+        <button class="btn btn-ghost btn-sm" onclick="copiarPix()" style="margin-top:8px">📋 Copiar código</button>
+        <div style="margin-top:12px;font-size:12px;color:#c0392b;font-weight:500" id="pixTimer"></div>
+      </div>
+
       <div class="nav-bottom">
         <button class="btn btn-ghost" onclick="goStep(4)">&larr; Voltar</button>
         <button class="btn btn-ghost btn-home" onclick="reiniciar()">Início</button>

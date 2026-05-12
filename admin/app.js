@@ -332,6 +332,11 @@ function renderProfissionais() {
   }).join('') + '</div>'
 }
 
+function togglePixFields() {
+  const ativo = document.getElementById('pPixAtivo').checked
+  document.getElementById('pPixFields').style.display = ativo ? 'block' : 'none'
+}
+
 function showProfForm(id) {
   editingId = id || null
   document.getElementById('modalProfTitle').textContent = id ? 'Editar Profissional' : 'Novo Profissional'
@@ -371,6 +376,9 @@ function showProfForm(id) {
     document.getElementById('pCor').value = p.avatar_cor || '#E8DDD0'
     document.getElementById('pFoto').value = p.foto_url || ''
     document.getElementById('pCalendarId').value = p.google_calendar_id || ''
+    document.getElementById('pPixAtivo').checked = !!p.mp_access_token
+    document.getElementById('pMpToken').value = p.mp_access_token || ''
+    document.getElementById('pPixFields').style.display = p.mp_access_token ? 'block' : 'none'
     // Show existing photo
     const preview = document.getElementById('pFotoPreview')
     if (p.foto_url) {
@@ -388,6 +396,9 @@ function showProfForm(id) {
     document.getElementById('pCor').value = '#E8DDD0'
     document.getElementById('pFoto').value = ''
     document.getElementById('pCalendarId').value = ''
+    document.getElementById('pPixAtivo').checked = false
+    document.getElementById('pMpToken').value = ''
+    document.getElementById('pPixFields').style.display = 'none'
     document.getElementById('pFotoPreview').style.display = 'none'
     // Default horarios: seg-sab manhã+tarde
     const defaultH = []
@@ -501,6 +512,7 @@ async function saveProf() {
     avatar_cor: document.getElementById('pCor').value,
     foto_url: document.getElementById('pFoto').value || null,
     google_calendar_id: document.getElementById('pCalendarId').value.trim() || null,
+    mp_access_token: document.getElementById('pPixAtivo').checked ? (document.getElementById('pMpToken').value.trim() || null) : null,
   }
 
   let profId = editingId

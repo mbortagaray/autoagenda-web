@@ -935,6 +935,112 @@ function buildResumoHTML() {
 }
 
 // ---- CONFIRMAR ----
+let pixTimerInterval = null
+
+async function confirmarComPix() {
+  const errDiv = document.getElementById('errConfirm')
+  errDiv.classList.remove('visible')
+
+  // Primeiro criar o agendamento com status aguardando_pagamento
+  const btnPix = document.querySelector('#pixOpcoes .btn-primary')
+  btnPix.disabled = true
+  btnPix.textContent = 'Gerando Pix...'
+
+  try {
+    const result = await criarAgendamento()
+    if (result.error) {
+      errDiv.textContent = result.error
+      errDiv.classList.add('visible')
+      btnPix.disabled = false
+      btnPix.textContent = '💳 Pagar agora com Pix'
+      return
+    }
+
+    const agendamentoId = result.id
+    if (!agendamentoId) {
+      errDiv.textContent = 'Erro ao criar agendamento'
+      errDiv.classList.add('visible')
+      btnPix.disabled = false
+      btnPix.textContent = '💳 Pagar agora com Pix'
+      return
+    }
+
+    // Gerar QR Code Pix
+    const pixRes = await fetch(`${FUNCTIONS_URL}/gerar-pix`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({ agendamento_id: agendamentoId })
+    })
+    const pixData = await pixRes.json()
+
+    if (!pixRes.ok || pixData.error) {
+      errDiv.textContent = pixData.error || 'Erro ao gerar Pix'
+      errDiv.classList.add('visible')
+      btnPix.disabled = false
+      btnPix.textContent = '💳 Pagar agora com Pix'
+      return
+    }
+
+    // Mostrar QR Code
+    document.getElementById('pixOpcoes').style.display = 'none'
+    document.getElementById('pixQrCode').style.display = 'block'
+
+    if (pixData.qr_code_base64) {
+      document.getElementById('pixQrImg').src = `data:image/png;base64,${pixData.qr_code_base64}`
+    }
+    document.getElementById('pixCopiaECola').textContent = pixData.qr_code || ''
+
+    // Timer 15 minutos
+    let segundos = 15 * 60
+    const timerEl = document.getElementById('pixTimer')
+    if (pixTimerInterval) clearInterval(pixTimerInterval)
+    pixTimerInterval = setInterval(() => {
+      segundos--
+      const min = Math.floor(segundos / 60)
+      const sec = segundos % 60
+      timerEl.textContent = `Expira em ${min}:${sec.toString().padStart(2, '0')}`
+      if (segundos <= 0) {
+        clearInterval(pixTimerInterval)
+        timerEl.textContent = 'Pix expirado — horário liberado'
+        timerEl.style.color = '#c0392b'
+      }
+    }, 1000)
+
+    // Verificar pagamento a cada 5 segundos
+    const checkInterval = setInterval(async () => {
+      const { data } = await fetch(
+        `${SUPABASE_URL}/rest/v1/agendamentos?id=eq.${agendamentoId}&select=status,pago`,
+        { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+      ).then(r => r.json()).then(d => ({ data: d[0] })).catch(() => ({ data: null }))
+
+      if (data?.pago || data?.status === 'confirmado') {
+        clearInterval(checkInterval)
+        clearInterval(pixTimerInterval)
+        document.getElementById('resumoFinal').innerHTML = buildResumoHTML()
+        renderLocationCard()
+        goStep(6)
+      }
+    }, 5000)
+
+  } catch (e) {
+    errDiv.textContent = 'Erro de conexão. Tente novamente.'
+    errDiv.classList.add('visible')
+    btnPix.disabled = false
+    btnPix.textContent = '💳 Pagar agora com Pix'
+  }
+}
+
+function copiarPix() {
+  const texto = document.getElementById('pixCopiaECola').textContent
+  navigator.clipboard.writeText(texto).then(() => {
+    const btn = document.querySelector('#pixQrCode .btn-ghost')
+    if (btn) { btn.textContent = '✓ Copiado!'; setTimeout(() => btn.textContent = '📋 Copiar código', 2000) }
+  })
+}
+
 async function confirmar() {
   const btn = document.querySelector('#step5 .btn-primary')
   const errDiv = document.getElementById('errConfirm')
@@ -1004,6 +1110,21 @@ async function goStep(n) {
       return
     }
     renderProfs()
+  }
+  if (n === 5) {
+    // Verificar se profissional aceita Pix
+    const prof = config.profissionais?.find(p => p.id === state.profissional)
+    const temPix = prof?.mp_access_token || prof?.pix_ativo
+    const pixOpcoes = document.getElementById('pixOpcoes')
+    const btnAgendar = document.getElementById('btnAgendar')
+    if (temPix) {
+      pixOpcoes.style.display = 'block'
+      btnAgendar.style.display = 'none'
+    } else {
+      pixOpcoes.style.display = 'none'
+      btnAgendar.style.display = 'block'
+    }
+    document.getElementById('pixQrCode').style.display = 'none'
   }
   if (n === 4) {
     // Verificar sessão ao entrar no step4
