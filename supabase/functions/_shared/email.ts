@@ -6,6 +6,7 @@ type TemplateName =
   | 'lembrete_cliente'
   | 'cancelamento_cliente'
   | 'cancelamento_profissional'
+  | 'reativacao_cliente'
 
 type EmailPayload = {
   to?: string | null
@@ -123,6 +124,23 @@ function renderTemplate(template: TemplateName, negocio: any, data: Record<strin
     return {
       subject: `${data.cliente_nome} cancelou o agendamento de ${dateBR(data.data)} às ${timeHHMM(data.hora)}`,
       html: baseHtml(negocio, 'Agendamento cancelado pelo cliente', `<p>O cliente cancelou este horário.</p>${details(data)}`),
+    }
+  }
+
+  if (template === 'reativacao_cliente') {
+    const negocioNome = negocio?.nome || 'AutoAgenda'
+    const bookingUrl = data.agendamento_url || `https://agenda.mdinamic.com.br/${negocio?.slug || ''}`
+    const unsubscribeUrl = data.unsubscribe_url || ''
+    const body = `
+      <p>Oi, ${escapeHtml(data.cliente_nome)}.</p>
+      <p>Sentimos sua falta por aqui. Que tal agendar um novo horario em ${escapeHtml(negocioNome)}?</p>
+      ${data.servico_nome ? `<p>Ja faz um tempo desde o seu ultimo atendimento de <strong>${escapeHtml(data.servico_nome)}</strong>.</p>` : ''}
+      <p><a href="${escapeHtml(bookingUrl)}" style="display:inline-block;background:${negocio?.cor_secundaria || '#C4947A'};color:#fff;text-decoration:none;padding:12px 16px;border-radius:8px;font-weight:700">Agendar horario</a></p>
+      ${unsubscribeUrl ? `<p style="margin-top:22px;color:#86868b;font-size:12px;line-height:1.5">Se nao quiser mais receber emails de reativacao, <a href="${escapeHtml(unsubscribeUrl)}" style="color:#86868b">clique aqui para descadastrar</a>.</p>` : ''}
+    `
+    return {
+      subject: `Sentimos sua falta, ${data.cliente_nome}!`,
+      html: baseHtml(negocio, 'Sentimos sua falta!', body),
     }
   }
 

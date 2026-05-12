@@ -138,6 +138,10 @@
               </select>
             </div>
           </div>
+          <div class="form-group">
+            <label class="form-label">Reativar cliente apos X dias sem agendar</label>
+            <input class="form-input" type="number" min="1" step="1" id="sPrazoReativacao" placeholder="Deixe vazio para nao enviar">
+          </div>
           <div class="modal-actions">
             <button class="btn btn-ghost" onclick="closeModal('modalServico')">Cancelar</button>
             <button class="btn btn-primary" onclick="saveServico()">Salvar</button>
@@ -398,6 +402,6 @@
 
 <script src="impersonation.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=10"></script>
+<script src="app.js?v=11"></script>
 </body>
 </html>

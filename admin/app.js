@@ -236,7 +236,7 @@ function renderServicos() {
     <div class="table-row">
       <div class="table-main">
         <div class="table-name">${s.nome} ${!s.ativo ? '<span style="color:#86868b">(inativo)</span>' : ''}</div>
-        <div class="table-sub">${s.duracao_min}min &bull; R$ ${Number(s.preco).toFixed(2).replace('.',',')}${s.promocao_ativa ? ' &bull; Promo: R$ ' + Number(s.preco_promocional||0).toFixed(2).replace('.',',') : ''}</div>
+        <div class="table-sub">${s.duracao_min}min &bull; R$ ${Number(s.preco).toFixed(2).replace('.',',')}${s.promocao_ativa ? ' &bull; Promo: R$ ' + Number(s.preco_promocional||0).toFixed(2).replace('.',',') : ''}${s.prazo_reativacao_dias ? ' &bull; Reativacao: ' + s.prazo_reativacao_dias + ' dias' : ''}</div>
       </div>
       <div class="table-actions">
         <button onclick="editServico('${s.id}')">Editar</button>
@@ -257,12 +257,14 @@ function showServicoForm(id) {
     document.getElementById('sPreco').value = s.preco
     document.getElementById('sPrecoPromo').value = s.preco_promocional || ''
     document.getElementById('sPromoAtiva').value = s.promocao_ativa ? 'true' : 'false'
+    document.getElementById('sPrazoReativacao').value = s.prazo_reativacao_dias || ''
   } else {
     document.getElementById('sNome').value = ''
     document.getElementById('sDuracao').value = ''
     document.getElementById('sPreco').value = ''
     document.getElementById('sPrecoPromo').value = ''
     document.getElementById('sPromoAtiva').value = 'false'
+    document.getElementById('sPrazoReativacao').value = ''
   }
   document.getElementById('modalServico').style.display = 'flex'
 }
@@ -277,6 +279,7 @@ async function saveServico() {
     preco: parseFloat(document.getElementById('sPreco').value),
     preco_promocional: document.getElementById('sPrecoPromo').value ? parseFloat(document.getElementById('sPrecoPromo').value) : null,
     promocao_ativa: document.getElementById('sPromoAtiva').value === 'true',
+    prazo_reativacao_dias: document.getElementById('sPrazoReativacao').value ? parseInt(document.getElementById('sPrazoReativacao').value) : null,
   }
 
   if (editingId) {
