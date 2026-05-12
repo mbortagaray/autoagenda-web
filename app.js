@@ -986,7 +986,7 @@ function renderLocationCard() {
 }
 
 // ---- NAVEGACAO ----
-function goStep(n) {
+async function goStep(n) {
   if (n === 1 && config?.servicos?.length === 1) {
     iniciarFluxoAdaptativo()
     return
