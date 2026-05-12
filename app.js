@@ -194,16 +194,36 @@ async function init() {
     renderAvisosAgenda()
 
     // Verificar callback de autenticação (Google OAuth ou magic link)
-    if (sb && (window.location.hash.includes('access_token') || new URLSearchParams(window.location.search).get('auth_callback'))) {
+    if (sb) {
       const { data: { session } } = await sb.auth.getSession()
       if (session) {
+        const userMeta = session.user?.user_metadata
+        const tel = userMeta?.telefone
+
+        // Se veio de callback de auth E não tem telefone → pedir telefone
+        if (window.location.hash.includes('access_token') && !tel) {
+          showLoading(false)
+          await abrirMeusAgendamentos(session)
+          return
+        }
+
+        // Se tem sessão → preencher dados e ir para agendamento
+        if (tel) {
+          state.tel = tel
+          state.nome = userMeta?.nome || userMeta?.full_name || ''
+          state.clienteEncontrado = true
+        }
+
+        // Mostrar step1 normalmente
+        iniciarFluxoAdaptativo()
         showLoading(false)
-        await abrirMeusAgendamentos(session)
         return
       }
     }
 
-    iniciarFluxoAdaptativo()
+    // Sem sessão → mostrar step0 (login)
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
+    document.getElementById('step0').classList.add('active')
     showLoading(false)
   } catch (e) {
     document.getElementById('loadingScreen').innerHTML =
@@ -1077,6 +1097,47 @@ function showNoInitialAvailability() {
   const slotsWrap = document.getElementById('slotsWrap')
   slotsWrap.style.display = 'block'
   slotsWrap.innerHTML = '<div style="text-align:center;color:#8A7060;padding:20px">Nenhum horário disponível nos próximos dias</div>'
+}
+
+async function loginGoogleAgendar() {
+  if (!sb) return
+  const errEl = document.getElementById('loginError0')
+  if (errEl) errEl.style.display = 'none'
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.href
+    }
+  })
+  if (error && errEl) {
+    errEl.textContent = 'Erro: ' + error.message
+    errEl.style.display = 'block'
+  }
+}
+
+async function loginEmailAgendar() {
+  if (!sb) return
+  const email = document.getElementById('inputLoginEmail0').value.trim()
+  const errEl = document.getElementById('loginError0')
+  if (errEl) errEl.style.display = 'none'
+
+  if (!email || !email.includes('@')) {
+    if (errEl) { errEl.textContent = 'Digite um email válido'; errEl.style.display = 'block' }
+    return
+  }
+
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href }
+  })
+
+  if (error) {
+    if (errEl) { errEl.textContent = 'Erro: ' + error.message; errEl.style.display = 'block' }
+    return
+  }
+
+  const sentEl = document.getElementById('emailSent0')
+  if (sentEl) sentEl.style.display = 'block'
 }
 
 async function goConsulta() {
