@@ -693,7 +693,7 @@ async function saveUsuario() {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${session.access_token}`
     },
-    body: JSON.stringify({ email, senha, negocio_id: negocioId || null, role }),
+    body: JSON.stringify({ email, senha, negocio_id: (role === 'admin' || role === 'superadmin') ? null : (negocioId || null), role }),
   })
   const result = await res.json()
 
