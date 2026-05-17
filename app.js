@@ -78,8 +78,10 @@ let state = {
 }
 
 // ---- API CALLS ----
+const ANON_HEADERS = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+
 async function fetchConfig() {
-  const res = await fetch(`${FUNCTIONS_URL}/config?slug=${slug}`)
+  const res = await fetch(`${FUNCTIONS_URL}/config?slug=${slug}`, { headers: ANON_HEADERS })
   if (!res.ok) throw new Error('Negócio não encontrado')
   return res.json()
 }
@@ -91,7 +93,7 @@ async function fetchHorarios(profissionalId, data, duracaoMin) {
     data,
     duracao_min: String(duracaoMin),
   })
-  const res = await fetch(`${FUNCTIONS_URL}/horarios?${params}`)
+  const res = await fetch(`${FUNCTIONS_URL}/horarios?${params}`, { headers: ANON_HEADERS })
   return res.json()
 }
 
@@ -121,7 +123,7 @@ async function buscarCliente(telefone) {
   const tel = normalizePhone(telefone)
   if (tel.length < 10) return null
   const params = new URLSearchParams({ negocio_id: config.negocio.id, telefone: tel })
-  const res = await fetch(`${FUNCTIONS_URL}/cliente-lookup?${params}`)
+  const res = await fetch(`${FUNCTIONS_URL}/cliente-lookup?${params}`, { headers: ANON_HEADERS })
   return res.json()
 }
 
@@ -129,7 +131,7 @@ async function buscarMeusAgendamentos(telefone) {
   const tel = normalizePhone(telefone)
   const pin = gerarPin(tel)
   const params = new URLSearchParams({ negocio_id: config.negocio.id, telefone: tel, pin })
-  const res = await fetch(`${FUNCTIONS_URL}/meus-agendamentos?${params}`)
+  const res = await fetch(`${FUNCTIONS_URL}/meus-agendamentos?${params}`, { headers: ANON_HEADERS })
   return res.json()
 }
 
