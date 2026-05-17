@@ -626,7 +626,7 @@ function renderUsuarios(list) {
   cont.innerHTML = list.map(u => `
     <div class="table-row">
       <div class="table-main">
-        <div class="table-name">${u.negocios?.nome || '—'}</div>
+        <div class="table-name">${u.role === 'superadmin' ? '— Super Admin —' : (u.negocios?.nome || '—')}</div>
         <div class="table-sub">
           <span class="role-chip role-${u.role}">${u.role}</span>
           <span class="user-id-chip">${u.user_id}</span>
@@ -692,5 +692,21 @@ async function saveUsuario() {
   await loadUsuarios()
 }
 
+// ---- TEMA ----
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+  const next = isDark ? 'light' : 'dark'
+  document.documentElement.setAttribute('data-theme', next)
+  localStorage.setItem('sa-theme', next)
+  document.getElementById('themeIcon').textContent = next === 'dark' ? '☀️' : '🌙'
+}
+
+function initTheme() {
+  const saved = localStorage.getItem('sa-theme') || 'light'
+  document.documentElement.setAttribute('data-theme', saved)
+  const icon = document.getElementById('themeIcon')
+  if (icon) icon.textContent = saved === 'dark' ? '☀️' : '🌙'
+}
+
 // ---- START ----
-document.addEventListener('DOMContentLoaded', checkSession)
+document.addEventListener('DOMContentLoaded', () => { initTheme(); checkSession() })

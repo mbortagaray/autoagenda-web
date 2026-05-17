@@ -6,7 +6,7 @@
   <title>AutoAgenda — Super Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="stylesheet" href="/superadmin/style.css?v=3">
+  <link rel="stylesheet" href="/superadmin/style.css?v=4">
 </head>
 <body>
 
@@ -47,6 +47,7 @@
     </nav>
     <div class="sidebar-footer">
       <button class="btn-logout" onclick="doLogout()">Sair</button>
+      <button class="btn-theme-toggle" onclick="toggleTheme()"><span id="themeIcon">🌙</span> Tema</button>
     </div>
   </div>
 
@@ -289,6 +290,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/superadmin/app.js?v=11"></script>
+<script src="/superadmin/app.js?v=12"></script>
 </body>
 </html>

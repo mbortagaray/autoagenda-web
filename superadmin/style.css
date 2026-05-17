@@ -455,6 +455,46 @@ body {
 .btn-accent { background: #1a73e8; color: white; border: none; }
 .btn-accent:hover { background: #1557b0; }
 
+/* THEME TOGGLE */
+.btn-theme-toggle {
+  background: none; border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.7); padding: 7px 14px;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  width: 100%; margin-top: 8px; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn-theme-toggle:hover { background: rgba(255,255,255,0.1); color: white; }
+
+/* DARK MODE */
+[data-theme="dark"] {
+  --bg: #111118;
+  --white: #1c1c28;
+  --border: #2a2a3e;
+  --text: #e2e2f0;
+  --text-muted: #9090aa;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+}
+[data-theme="dark"] .stat-value { color: var(--text); }
+[data-theme="dark"] .login-screen { background: #0a0a14; }
+[data-theme="dark"] .login-error { background: #3e1a1a; color: #ff7070; }
+[data-theme="dark"] .form-error { background: #3e1a1a; color: #ff7070; }
+[data-theme="dark"] .form-success { background: #1a3e22; color: #5cbb6a; }
+[data-theme="dark"] .modal { background: var(--white); }
+[data-theme="dark"] .slug-chip { background: #252538; color: var(--text-muted); }
+[data-theme="dark"] .role-owner { background: #1a2a4e; color: #70a8ff; }
+[data-theme="dark"] .role-admin { background: #3e2a00; color: #f59800; }
+[data-theme="dark"] .role-superadmin { background: #3e1818; color: #ff7070; }
+[data-theme="dark"] .status-badge.active { background: #1a3a20; color: #5cbb6a; }
+[data-theme="dark"] .status-badge.inactive { background: #3a1a20; color: #ff7070; }
+[data-theme="dark"] .table-row.negocio-row .status-badge.inactive { background: #252538; color: #9090aa; }
+[data-theme="dark"] .btn-remove:hover { background: #3e1a1a; }
+[data-theme="dark"] .checkbox-item { background: var(--white); }
+[data-theme="dark"] .checkbox-item.checked { background: var(--primary-light); border-color: var(--primary-light); }
+[data-theme="dark"] .horario-row select,
+[data-theme="dark"] .horario-row input[type="time"] { background: var(--white); color: var(--text); border-color: var(--border); }
+[data-theme="dark"] .slug-prefix { background: var(--bg); border-color: var(--border); }
+
 @media (max-width: 768px) {
   .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .negocios-toolbar { grid-template-columns: 1fr; }
