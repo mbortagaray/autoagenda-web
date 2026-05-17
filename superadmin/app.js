@@ -647,7 +647,7 @@ function mapAuthError(msg) {
 
 function onRoleChange() {
   const role = document.getElementById('uRole').value
-  document.getElementById('uNegocioGroup').style.display = role === 'superadmin' ? 'none' : ''
+  document.getElementById('uNegocioGroup').style.display = (role === 'superadmin' || role === 'admin') ? 'none' : ''
 }
 
 async function showUsuarioForm() {
@@ -681,7 +681,7 @@ async function saveUsuario() {
   if (!email || !senha) { errEl.textContent = 'Email e senha são obrigatórios'; errEl.style.display = 'block'; return }
   if (senha.length < 6) { errEl.textContent = 'Senha deve ter no mínimo 6 caracteres'; errEl.style.display = 'block'; return }
   if (senha !== senhaConfirm) { errEl.textContent = 'Senhas não coincidem'; errEl.style.display = 'block'; return }
-  if (role !== 'superadmin' && !negocioId) { errEl.textContent = 'Selecione um negócio'; errEl.style.display = 'block'; return }
+  if (role === 'owner' && !negocioId) { errEl.textContent = 'Selecione um negócio'; errEl.style.display = 'block'; return }
 
   btn.disabled = true
   btn.textContent = 'Criando...'
