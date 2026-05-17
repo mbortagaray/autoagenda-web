@@ -30,9 +30,9 @@ Deno.serve(async (req) => {
     }
 
     const { email, senha, negocio_id, role } = await req.json()
-    const isSuperadmin = role === 'superadmin'
+    const allowNoNegocio = role === 'superadmin' || role === 'admin'
 
-    if (!email || !senha || (!isSuperadmin && !negocio_id) || !role) {
+    if (!email || !senha || !role || (!allowNoNegocio && !negocio_id)) {
       return new Response(
         JSON.stringify({ error: 'email, senha e role são obrigatórios' }),
         { status: 400, headers: corsHeaders }
@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
       .from('admin_users')
       .insert({
         user_id: newUser.user.id,
-        negocio_id: isSuperadmin ? null : negocio_id,
+        negocio_id: allowNoNegocio ? null : negocio_id,
         role,
         email,
       })
