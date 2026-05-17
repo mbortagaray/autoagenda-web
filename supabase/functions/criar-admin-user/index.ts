@@ -29,17 +29,18 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Acesso negado' }), { status: 403, headers: corsHeaders })
     }
 
-    const { email, senha, negocio_id, role } = await req.json()
+    const { email, senha, nome, negocio_id, role } = await req.json()
     const allowNoNegocio = role === 'superadmin' || role === 'admin'
 
-    if (!email || !senha || !role || (!allowNoNegocio && !negocio_id)) {
+    if (!email || !senha || !role || !nome || (!allowNoNegocio && !negocio_id)) {
       return new Response(
-        JSON.stringify({ error: 'email, senha e role são obrigatórios' }),
+        JSON.stringify({ error: 'nome, email, senha e role são obrigatórios' }),
         { status: 400, headers: corsHeaders }
       )
     }
 
-    // Criar usuário no Auth
+    // Criar usuário no Auth — ou recuperar órfão de tentativa anterior que falhou
+    let userId: string
     const { data: newUser, error: createError } = await sb.auth.admin.createUser({
       email,
       password: senha,
@@ -47,25 +48,42 @@ Deno.serve(async (req) => {
     })
 
     if (createError) {
-      return new Response(
-        JSON.stringify({ error: createError.message }),
-        { status: 400, headers: corsHeaders }
-      )
+      const msg = (createError.message || '').toLowerCase()
+      const alreadyExists = msg.includes('already') || msg.includes('registered') || msg.includes('exists')
+      if (!alreadyExists) {
+        return new Response(JSON.stringify({ error: createError.message }), { status: 400, headers: corsHeaders })
+      }
+      // Email existe em auth — verificar se também está em admin_users
+      const { data: list } = await sb.auth.admin.listUsers()
+      const existing = list?.users?.find((u: any) => (u.email || '').toLowerCase() === email.toLowerCase())
+      if (!existing) {
+        return new Response(JSON.stringify({ error: 'Email já cadastrado' }), { status: 400, headers: corsHeaders })
+      }
+      const { data: existingAdmin } = await sb.from('admin_users').select('id').eq('user_id', existing.id).maybeSingle()
+      if (existingAdmin) {
+        return new Response(JSON.stringify({ error: 'Email já cadastrado' }), { status: 400, headers: corsHeaders })
+      }
+      // Órfão — atualizar senha e reutilizar
+      await sb.auth.admin.updateUserById(existing.id, { password: senha })
+      userId = existing.id
+    } else {
+      userId = newUser.user.id
     }
 
     // Inserir na tabela admin_users
     const { error: insertError } = await sb
       .from('admin_users')
       .insert({
-        user_id: newUser.user.id,
+        user_id: userId,
         negocio_id: allowNoNegocio ? null : negocio_id,
         role,
         email,
+        nome,
       })
 
     if (insertError) {
-      // Rollback — deletar usuário criado
-      await sb.auth.admin.deleteUser(newUser.user.id)
+      // Rollback só se criamos agora (não delete órfão de outra origem)
+      if (!createError) await sb.auth.admin.deleteUser(userId)
       return new Response(
         JSON.stringify({ error: insertError.message }),
         { status: 400, headers: corsHeaders }

@@ -6,7 +6,7 @@
   <title>AutoAgenda — Super Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="stylesheet" href="/superadmin/style.css?v=5">
+  <link rel="stylesheet" href="/superadmin/style.css?v=6">
 </head>
 <body>
 
@@ -261,6 +261,10 @@
   <div class="modal">
     <div class="modal-title">Novo Usuário Admin</div>
     <div class="form-group">
+      <label class="form-label">Nome completo</label>
+      <input class="form-input" type="text" id="uNome" placeholder="Claudio Vendedor">
+    </div>
+    <div class="form-group">
       <label class="form-label">Email</label>
       <input class="form-input" type="email" id="uEmail" placeholder="admin@negocio.com">
     </div>
@@ -275,9 +279,9 @@
     <div class="form-group">
       <label class="form-label">Papel</label>
       <select class="form-input" id="uRole" onchange="onRoleChange()">
-        <option value="owner">Owner</option>
-        <option value="admin">Admin</option>
         <option value="superadmin">Super Admin</option>
+        <option value="admin">Admin (Vendedor)</option>
+        <option value="owner">Owner (dono de um negócio)</option>
       </select>
     </div>
     <div class="form-group" id="uNegocioGroup">
@@ -312,7 +316,30 @@
   </div>
 </div>
 
+<!-- DRAWER NEGÓCIOS DO USUÁRIO -->
+<div class="drawer-backdrop" id="drawerUserNegocios" style="display:none" onclick="if(event.target===this)closeDrawer('drawerUserNegocios')">
+  <div class="drawer">
+    <div class="drawer-grip"></div>
+    <div class="drawer-head">
+      <div>
+        <div class="drawer-title" id="drawerUserNome">—</div>
+        <div class="drawer-sub" id="drawerUserEmail">—</div>
+        <div style="margin-top:8px"><span class="role-chip" id="drawerUserRole">—</span></div>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer('drawerUserNegocios')">✕</button>
+    </div>
+    <div class="drawer-label">Negócios vinculados</div>
+    <div id="drawerUserNegociosList"></div>
+    <div class="drawer-label" style="margin-top:18px">Vincular a outro negócio</div>
+    <div style="display:flex;gap:8px">
+      <select class="form-input" id="drawerUserNegocioSelect"></select>
+      <button class="btn btn-primary btn-sm" onclick="vincularNegocioAoUser()">Vincular</button>
+    </div>
+    <div id="drawerUserFeedback" style="margin-top:8px;font-size:13px;color:var(--danger);display:none"></div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/superadmin/app.js?v=16"></script>
+<script src="/superadmin/app.js?v=17"></script>
 </body>
 </html>

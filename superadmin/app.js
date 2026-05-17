@@ -610,12 +610,38 @@ async function toggleProf(id, ativo) {
 }
 
 // ---- USUÁRIOS ----
+let usuariosAgrupados = []
+
 async function loadUsuarios() {
   const { data } = await sb
     .from('admin_users')
-    .select('id, user_id, email, role, negocio_id, negocios(nome)')
-    .order('role')
-  renderUsuarios(data || [])
+    .select('id, user_id, email, nome, role, negocio_id, negocios(id, nome)')
+  const rows = data || []
+
+  // Agrupa por user_id
+  const map = new Map()
+  for (const r of rows) {
+    if (!map.has(r.user_id)) {
+      map.set(r.user_id, {
+        user_id: r.user_id,
+        email: r.email,
+        nome: r.nome,
+        role: r.role,
+        negocios: [],
+      })
+    }
+    const u = map.get(r.user_id)
+    if (!u.email && r.email) u.email = r.email
+    if (!u.nome && r.nome) u.nome = r.nome
+    if (r.negocio_id && r.negocios) {
+      u.negocios.push({ admin_users_id: r.id, negocio_id: r.negocio_id, nome: r.negocios.nome })
+    }
+  }
+
+  // Ordem: superadmin → admin → owner
+  const ordem = { superadmin: 0, admin: 1, owner: 2 }
+  usuariosAgrupados = [...map.values()].sort((a, b) => (ordem[a.role] ?? 9) - (ordem[b.role] ?? 9))
+  renderUsuarios(usuariosAgrupados)
 }
 
 function renderUsuarios(list) {
@@ -624,17 +650,114 @@ function renderUsuarios(list) {
     cont.innerHTML = '<div class="empty-state">Nenhum usuário encontrado</div>'
     return
   }
-  cont.innerHTML = list.map(u => `
-    <div class="table-row">
-      <div class="table-main">
-        <div class="table-name">${u.role === 'superadmin' ? '— Super Admin —' : (u.negocios?.nome || '—')}</div>
-        <div class="table-sub">
+  cont.innerHTML = list.map(u => {
+    const isSuperadmin = u.role === 'superadmin'
+    const negCount = u.negocios.length
+    const negBtn = isSuperadmin
+      ? '<span style="color:var(--text-muted);font-size:13px">—</span>'
+      : `<button class="btn btn-sm btn-ghost" onclick="openUserNegociosDrawer('${u.user_id}')">${negCount} negócio${negCount === 1 ? '' : 's'} ›</button>`
+    return `
+      <div class="table-row" style="align-items:center;gap:12px">
+        <div class="table-main">
           <span class="role-chip role-${u.role}">${u.role}</span>
-          ${u.email ? `<span class="user-id-chip">${u.email}</span>` : `<span class="user-id-chip">${u.user_id}</span>`}
+          <div class="table-name" style="margin-top:6px">${u.nome || '—'}</div>
+          <div class="table-sub">${u.email || u.user_id}</div>
         </div>
+        ${negBtn}
       </div>
-    </div>
-  `).join('')
+    `
+  }).join('')
+}
+
+// ---- DRAWER NEGÓCIOS DO USUÁRIO ----
+let drawerUserCurrent = null
+
+function openUserNegociosDrawer(userId) {
+  const u = usuariosAgrupados.find(x => x.user_id === userId)
+  if (!u) return
+  drawerUserCurrent = u
+  document.getElementById('drawerUserNome').textContent = u.nome || '—'
+  document.getElementById('drawerUserEmail').textContent = u.email || u.user_id
+  const roleEl = document.getElementById('drawerUserRole')
+  roleEl.textContent = u.role
+  roleEl.className = `role-chip role-${u.role}`
+  renderDrawerUserNegocios()
+  document.getElementById('drawerUserFeedback').style.display = 'none'
+  document.getElementById('drawerUserNegocios').style.display = 'flex'
+}
+
+function renderDrawerUserNegocios() {
+  const list = document.getElementById('drawerUserNegociosList')
+  if (!drawerUserCurrent.negocios.length) {
+    list.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">Nenhum negócio vinculado.</div>'
+  } else {
+    list.innerHTML = drawerUserCurrent.negocios.map(n => `
+      <div class="drawer-item">
+        <span class="drawer-item-name">${n.nome}</span>
+        <button class="btn btn-sm btn-danger" onclick="desvincularNegocioDoUser('${n.admin_users_id}')">Desvincular</button>
+      </div>
+    `).join('')
+  }
+  // Popula select com negócios não vinculados
+  const linkedIds = new Set(drawerUserCurrent.negocios.map(n => n.negocio_id))
+  const available = negocios.filter(n => !linkedIds.has(n.id))
+  const sel = document.getElementById('drawerUserNegocioSelect')
+  sel.disabled = !available.length
+  sel.innerHTML = available.length
+    ? '<option value="">Selecione...</option>' + available.map(n => `<option value="${n.id}">${n.nome}</option>`).join('')
+    : '<option value="">Nenhum negócio disponível</option>'
+}
+
+async function vincularNegocioAoUser() {
+  const negocioId = document.getElementById('drawerUserNegocioSelect').value
+  const feedback = document.getElementById('drawerUserFeedback')
+  feedback.style.display = 'none'
+  if (!negocioId || !drawerUserCurrent) return
+
+  // Insere vínculo
+  const { error } = await sb.from('admin_users').insert({
+    user_id: drawerUserCurrent.user_id,
+    negocio_id: negocioId,
+    role: drawerUserCurrent.role,
+    email: drawerUserCurrent.email,
+    nome: drawerUserCurrent.nome,
+  })
+  if (error) {
+    feedback.textContent = 'Erro: ' + error.message
+    feedback.style.display = 'block'
+    return
+  }
+
+  // Se era a 1ª vinculação, deletar a linha órfã (negocio_id=null)
+  if (drawerUserCurrent.negocios.length === 0) {
+    await sb.from('admin_users').delete().eq('user_id', drawerUserCurrent.user_id).is('negocio_id', null)
+  }
+
+  await loadUsuarios()
+  // Reabre o drawer com o estado atualizado
+  const updated = usuariosAgrupados.find(x => x.user_id === drawerUserCurrent.user_id)
+  if (updated) {
+    drawerUserCurrent = updated
+    renderDrawerUserNegocios()
+  }
+}
+
+async function desvincularNegocioDoUser(adminUsersId) {
+  if (!confirm('Desvincular este negócio do usuário?')) return
+  await sb.from('admin_users').delete().eq('id', adminUsersId)
+  await loadUsuarios()
+  const updated = usuariosAgrupados.find(x => x.user_id === drawerUserCurrent.user_id)
+  if (updated) {
+    drawerUserCurrent = updated
+    renderDrawerUserNegocios()
+  } else {
+    closeDrawer('drawerUserNegocios')
+  }
+}
+
+function closeDrawer(id) {
+  document.getElementById(id).style.display = 'none'
+  drawerUserCurrent = null
 }
 
 function mapAuthError(msg) {
@@ -651,10 +774,11 @@ function onRoleChange() {
 }
 
 async function showUsuarioForm() {
+  document.getElementById('uNome').value = ''
   document.getElementById('uEmail').value = ''
   document.getElementById('uSenha').value = ''
   document.getElementById('uSenhaConfirm').value = ''
-  document.getElementById('uRole').value = 'owner'
+  document.getElementById('uRole').value = 'admin'
   document.getElementById('modalUsuarioError').style.display = 'none'
   document.getElementById('modalUsuarioSuccess').style.display = 'none'
   document.getElementById('btnSaveUsuario').disabled = false
@@ -672,12 +796,14 @@ async function saveUsuario() {
   errEl.style.display = 'none'
   sucEl.style.display = 'none'
 
+  const nome = document.getElementById('uNome').value.trim()
   const email = document.getElementById('uEmail').value.trim()
   const senha = document.getElementById('uSenha').value
   const senhaConfirm = document.getElementById('uSenhaConfirm').value
   const negocioId = document.getElementById('uNegocio').value
   const role = document.getElementById('uRole').value
 
+  if (!nome) { errEl.textContent = 'Nome é obrigatório'; errEl.style.display = 'block'; return }
   if (!email || !senha) { errEl.textContent = 'Email e senha são obrigatórios'; errEl.style.display = 'block'; return }
   if (senha.length < 6) { errEl.textContent = 'Senha deve ter no mínimo 6 caracteres'; errEl.style.display = 'block'; return }
   if (senha !== senhaConfirm) { errEl.textContent = 'Senhas não coincidem'; errEl.style.display = 'block'; return }
@@ -693,7 +819,7 @@ async function saveUsuario() {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${session.access_token}`
     },
-    body: JSON.stringify({ email, senha, negocio_id: (role === 'admin' || role === 'superadmin') ? null : (negocioId || null), role }),
+    body: JSON.stringify({ nome, email, senha, negocio_id: (role === 'admin' || role === 'superadmin') ? null : (negocioId || null), role }),
   })
   const result = await res.json()
 
