@@ -51,7 +51,8 @@
   <div class="login-card" style="max-width:400px">
     <div class="login-logo">AutoAgenda</div>
     <div class="login-sub">Selecione o negócio</div>
-    <div id="negocioSelectorList" style="margin:16px 0"></div>
+    <input id="negocioSelectorSearch" class="form-input" placeholder="Buscar..." style="display:none;margin-top:12px" oninput="filterNegocioSelector()">
+    <div id="negocioSelectorList" style="margin:16px 0;max-height:50vh;overflow-y:auto"></div>
     <button class="btn btn-ghost" style="width:100%" onclick="doLogout()">Sair</button>
   </div>
 </div>
@@ -425,6 +426,6 @@
 
 <script src="impersonation.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=12"></script>
+<script src="app.js?v=13"></script>
 </body>
 </html>

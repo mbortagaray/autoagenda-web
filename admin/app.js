@@ -113,14 +113,27 @@ function showSemNegocio() {
 function showNegocioSelector() {
   document.getElementById('loginScreen').style.display = 'none'
   document.getElementById('adminApp').style.display = 'none'
+  const search = document.getElementById('negocioSelectorSearch')
+  search.style.display = adminNegocioRows.length > 5 ? 'block' : 'none'
+  search.value = ''
+  renderNegocioSelectorList(adminNegocioRows)
+  document.getElementById('negocioSelectorScreen').style.display = 'flex'
+}
+
+function renderNegocioSelectorList(rows) {
   const list = document.getElementById('negocioSelectorList')
-  list.innerHTML = adminNegocioRows.map(r => `
+  list.innerHTML = rows.length ? rows.map(r => `
     <div class="negocio-option" onclick="enterNegocio('${r.negocio_id}')">
       <span class="negocio-option-nome">${r.negocios?.nome || r.negocio_id}</span>
       <span class="negocio-option-arrow">→</span>
     </div>
-  `).join('')
-  document.getElementById('negocioSelectorScreen').style.display = 'flex'
+  `).join('') : '<div style="text-align:center;color:#86868b;padding:20px;font-size:13px">Nenhum negócio encontrado</div>'
+}
+
+function filterNegocioSelector() {
+  const q = document.getElementById('negocioSelectorSearch').value.toLowerCase().trim()
+  const filtered = q ? adminNegocioRows.filter(r => (r.negocios?.nome || '').toLowerCase().includes(q)) : adminNegocioRows
+  renderNegocioSelectorList(filtered)
 }
 
 async function enterNegocio(id) {
