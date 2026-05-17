@@ -195,6 +195,7 @@ function renderNegocios(list) {
       </div>
       <span class="status-badge ${n.ativo ? 'active' : 'inactive'}">${n.ativo ? 'Ativo' : 'Inativo'}</span>
       <div class="table-actions">
+        <button class="btn btn-sm btn-ghost" onclick="gerenciarProfissionais('${n.id}')">Profissionais</button>
         <button class="btn btn-sm btn-accent" onclick="entrarComoAdmin('${n.id}')">⚡ Entrar como admin</button>
         <button class="btn btn-sm ${n.ativo ? 'btn-danger' : 'btn-primary'}" onclick="toggleNegocio('${n.id}', ${n.ativo})">
           ${n.ativo ? 'Desativar' : 'Ativar'}
