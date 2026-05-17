@@ -266,19 +266,23 @@
     </div>
     <div class="form-group">
       <label class="form-label">Senha inicial</label>
-      <input class="form-input" type="text" id="uSenha" placeholder="Mínimo 6 caracteres">
+      <input class="form-input" type="password" id="uSenha" placeholder="Mínimo 6 caracteres">
     </div>
     <div class="form-group">
-      <label class="form-label">Negócio</label>
-      <select class="form-input" id="uNegocio"></select>
+      <label class="form-label">Confirmar senha</label>
+      <input class="form-input" type="password" id="uSenhaConfirm" placeholder="Repita a senha">
     </div>
     <div class="form-group">
       <label class="form-label">Papel</label>
-      <select class="form-input" id="uRole">
+      <select class="form-input" id="uRole" onchange="onRoleChange()">
         <option value="owner">Owner</option>
         <option value="admin">Admin</option>
         <option value="superadmin">Super Admin</option>
       </select>
+    </div>
+    <div class="form-group" id="uNegocioGroup">
+      <label class="form-label">Negócio</label>
+      <select class="form-input" id="uNegocio"></select>
     </div>
     <div id="modalUsuarioError" class="form-error" style="display:none"></div>
     <div id="modalUsuarioSuccess" class="form-success" style="display:none"></div>
@@ -290,6 +294,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/superadmin/app.js?v=12"></script>
+<script src="/superadmin/app.js?v=13"></script>
 </body>
 </html>

@@ -612,7 +612,7 @@ async function toggleProf(id, ativo) {
 async function loadUsuarios() {
   const { data } = await sb
     .from('admin_users')
-    .select('id, user_id, role, negocio_id, negocios(nome)')
+    .select('id, user_id, email, role, negocio_id, negocios(nome)')
     .order('role')
   renderUsuarios(data || [])
 }
@@ -629,16 +629,30 @@ function renderUsuarios(list) {
         <div class="table-name">${u.role === 'superadmin' ? '— Super Admin —' : (u.negocios?.nome || '—')}</div>
         <div class="table-sub">
           <span class="role-chip role-${u.role}">${u.role}</span>
-          <span class="user-id-chip">${u.user_id}</span>
+          ${u.email ? `<span class="user-id-chip">${u.email}</span>` : `<span class="user-id-chip">${u.user_id}</span>`}
         </div>
       </div>
     </div>
   `).join('')
 }
 
+function mapAuthError(msg) {
+  if (!msg) return 'Erro desconhecido'
+  if (msg.includes('already registered') || msg.includes('already been registered')) return 'Email já cadastrado'
+  if (msg.includes('invalid email') || msg.includes('Invalid email')) return 'Email inválido'
+  if (msg.includes('Password should be') || msg.includes('password')) return 'Senha deve ter no mínimo 6 caracteres'
+  return msg
+}
+
+function onRoleChange() {
+  const role = document.getElementById('uRole').value
+  document.getElementById('uNegocioGroup').style.display = role === 'superadmin' ? 'none' : ''
+}
+
 async function showUsuarioForm() {
   document.getElementById('uEmail').value = ''
   document.getElementById('uSenha').value = ''
+  document.getElementById('uSenhaConfirm').value = ''
   document.getElementById('uRole').value = 'owner'
   document.getElementById('modalUsuarioError').style.display = 'none'
   document.getElementById('modalUsuarioSuccess').style.display = 'none'
@@ -646,6 +660,7 @@ async function showUsuarioForm() {
   document.getElementById('btnSaveUsuario').textContent = 'Criar usuário'
   const sel = document.getElementById('uNegocio')
   sel.innerHTML = negocios.map(n => `<option value="${n.id}">${n.nome}</option>`).join('')
+  onRoleChange()
   document.getElementById('modalUsuario').style.display = 'flex'
 }
 
@@ -657,12 +672,15 @@ async function saveUsuario() {
   sucEl.style.display = 'none'
 
   const email = document.getElementById('uEmail').value.trim()
-  const senha = document.getElementById('uSenha').value.trim()
+  const senha = document.getElementById('uSenha').value
+  const senhaConfirm = document.getElementById('uSenhaConfirm').value
   const negocioId = document.getElementById('uNegocio').value
   const role = document.getElementById('uRole').value
 
   if (!email || !senha) { errEl.textContent = 'Email e senha são obrigatórios'; errEl.style.display = 'block'; return }
   if (senha.length < 6) { errEl.textContent = 'Senha deve ter no mínimo 6 caracteres'; errEl.style.display = 'block'; return }
+  if (senha !== senhaConfirm) { errEl.textContent = 'Senhas não coincidem'; errEl.style.display = 'block'; return }
+  if (role !== 'superadmin' && !negocioId) { errEl.textContent = 'Selecione um negócio'; errEl.style.display = 'block'; return }
 
   btn.disabled = true
   btn.textContent = 'Criando...'
@@ -674,12 +692,12 @@ async function saveUsuario() {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${session.access_token}`
     },
-    body: JSON.stringify({ email, senha, negocio_id: negocioId, role }),
+    body: JSON.stringify({ email, senha, negocio_id: negocioId || null, role }),
   })
   const result = await res.json()
 
   if (!res.ok || result.error) {
-    errEl.textContent = result.error || 'Erro ao criar usuário'
+    errEl.textContent = mapAuthError(result.error)
     errEl.style.display = 'block'
     btn.disabled = false
     btn.textContent = 'Criar usuário'
@@ -690,6 +708,7 @@ async function saveUsuario() {
   sucEl.style.display = 'block'
   btn.textContent = 'Criado ✓'
   await loadUsuarios()
+  setTimeout(() => closeModal('modalUsuario'), 1500)
 }
 
 // ---- TEMA ----

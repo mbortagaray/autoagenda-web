@@ -16,11 +16,25 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    const { email, senha, negocio_id, role } = await req.json()
+    // Verificar que o chamador é superadmin
+    const authHeader = req.headers.get('Authorization') || ''
+    const token = authHeader.replace(/^Bearer\s+/i, '')
+    const { data: userData } = await sb.auth.getUser(token)
+    const { data: caller } = await sb
+      .from('admin_users')
+      .select('role')
+      .eq('user_id', userData.user?.id || '')
+      .single()
+    if (!caller || caller.role !== 'superadmin') {
+      return new Response(JSON.stringify({ error: 'Acesso negado' }), { status: 403, headers: corsHeaders })
+    }
 
-    if (!email || !senha || !negocio_id || !role) {
+    const { email, senha, negocio_id, role } = await req.json()
+    const isSuperadmin = role === 'superadmin'
+
+    if (!email || !senha || (!isSuperadmin && !negocio_id) || !role) {
       return new Response(
-        JSON.stringify({ error: 'email, senha, negocio_id e role são obrigatórios' }),
+        JSON.stringify({ error: 'email, senha e role são obrigatórios' }),
         { status: 400, headers: corsHeaders }
       )
     }
@@ -44,8 +58,9 @@ Deno.serve(async (req) => {
       .from('admin_users')
       .insert({
         user_id: newUser.user.id,
-        negocio_id,
+        negocio_id: isSuperadmin ? null : negocio_id,
         role,
+        email,
       })
 
     if (insertError) {
