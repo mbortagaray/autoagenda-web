@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
     // Buscar agendamento com profissional e serviço
     const { data: ag, error: agErr } = await sb
       .from('agendamentos')
-      .select('*, profissionais(nome, mp_access_token), servicos(nome, preco), negocios(nome)')
+      .select('*, profissionais(nome, mp_access_token, pix_ativo), servicos(nome, preco), negocios(nome)')
       .eq('id', agendamento_id)
       .single()
 
@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     }
 
     const mpToken = ag.profissionais?.mp_access_token
-    if (!mpToken) {
+    if (!mpToken || !ag.profissionais?.pix_ativo) {
       return new Response(JSON.stringify({ error: 'Profissional não aceita Pix' }), { status: 400, headers: corsHeaders })
     }
 
@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
         description: `${ag.servicos?.nome} - ${ag.negocios?.nome}`,
         payment_method_id: 'pix',
         payer: {
-          email: ag.cliente_email || 'cliente@autoagenda.com.br',
+          email: ag.cliente_email || `pix-${agendamento_id.slice(0, 8)}@autoagenda.com.br`,
           first_name: ag.cliente_nome?.split(' ')[0] || 'Cliente',
         },
         date_of_expiration: new Date(Date.now() + 15 * 60 * 1000).toISOString(), // 15 minutos

@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     .select('hora, duracao_min')
     .eq('profissional_id', profissional_id)
     .eq('data', data)
-    .eq('status', 'confirmado')
+    .in('status', ['confirmado', 'aguardando_pagamento'])
 
   const novoInicio = timeToMin(hora)
   const novoFim = novoInicio + servico.duracao_min

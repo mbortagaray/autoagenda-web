@@ -80,31 +80,63 @@ async function checkAuth() {
   }
 }
 
-async function initAdmin() {
-  // Get negocio_id from admin_users
-  const { data: { user } } = await sb.auth.getUser()
-  const { data: adminUser } = await sb
-    .from('admin_users')
-    .select('negocio_id')
-    .eq('user_id', user.id)
-    .single()
+let adminNegocioRows = []
 
-  if (!adminUser) {
-    alert('Usuário não vinculado a nenhum negócio')
+async function initAdmin() {
+  const { data: { user } } = await sb.auth.getUser()
+  const { data: rows } = await sb
+    .from('admin_users')
+    .select('negocio_id, negocios(id, nome)')
+    .eq('user_id', user.id)
+    .not('negocio_id', 'is', null)
+
+  adminNegocioRows = rows || []
+
+  if (!adminNegocioRows.length) {
+    showSemNegocio()
     return
   }
 
-  negocioId = adminUser.negocio_id
+  if (adminNegocioRows.length === 1) {
+    await enterNegocio(adminNegocioRows[0].negocio_id)
+    return
+  }
 
-  // Load negocio data
+  showNegocioSelector()
+}
+
+function showSemNegocio() {
+  document.getElementById('loginScreen').style.display = 'none'
+  document.getElementById('semNegocioScreen').style.display = 'flex'
+}
+
+function showNegocioSelector() {
+  document.getElementById('loginScreen').style.display = 'none'
+  document.getElementById('adminApp').style.display = 'none'
+  const list = document.getElementById('negocioSelectorList')
+  list.innerHTML = adminNegocioRows.map(r => `
+    <div class="negocio-option" onclick="enterNegocio('${r.negocio_id}')">
+      <span class="negocio-option-nome">${r.negocios?.nome || r.negocio_id}</span>
+      <span class="negocio-option-arrow">→</span>
+    </div>
+  `).join('')
+  document.getElementById('negocioSelectorScreen').style.display = 'flex'
+}
+
+async function enterNegocio(id) {
+  negocioId = id
   const { data: neg } = await sb.from('negocios').select('*').eq('id', negocioId).single()
   negocio = neg
 
+  document.getElementById('semNegocioScreen').style.display = 'none'
+  document.getElementById('negocioSelectorScreen').style.display = 'none'
   document.getElementById('loginScreen').style.display = 'none'
   document.getElementById('adminApp').style.display = 'flex'
   document.getElementById('sidebarNegocio').textContent = negocio.nome
 
-  // Set today's date
+  const trocarBtn = document.getElementById('btnTrocarNegocio')
+  if (trocarBtn) trocarBtn.style.display = adminNegocioRows.length > 1 ? '' : 'none'
+
   document.getElementById('agendaDate').value = new Date().toISOString().split('T')[0]
 
   await loadServicos()

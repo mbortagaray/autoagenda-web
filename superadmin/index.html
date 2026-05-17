@@ -6,7 +6,7 @@
   <title>AutoAgenda — Super Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="stylesheet" href="/superadmin/style.css?v=4">
+  <link rel="stylesheet" href="/superadmin/style.css?v=5">
 </head>
 <body>
 
@@ -293,7 +293,26 @@
   </div>
 </div>
 
+<!-- MODAL ADMINS DO NEGÓCIO -->
+<div class="modal-overlay" id="modalAdminsNegocio" style="display:none">
+  <div class="modal">
+    <div class="modal-title" id="modalAdminsNegocioTitle">Admins do Negócio</div>
+    <div id="adminsNegocioList"></div>
+    <div class="form-group" style="margin-top:16px">
+      <label class="form-label">Vincular admin existente</label>
+      <div style="display:flex;gap:8px">
+        <select class="form-input" id="adminsNegocioSelect"></select>
+        <button class="btn btn-primary btn-sm" onclick="vincularAdminSelecionado()">Vincular</button>
+      </div>
+    </div>
+    <div id="adminsNegocioFeedback" style="margin-top:8px;font-size:13px;color:var(--danger);display:none"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalAdminsNegocio')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/superadmin/app.js?v=13"></script>
+<script src="/superadmin/app.js?v=14"></script>
 </body>
 </html>

@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     .from('agendamentos')
     .select('*, negocios(janela_cancelamento_horas, fuso_horario)')
     .eq('id', agendamento_id)
-    .eq('status', 'confirmado')
+    .in('status', ['confirmado', 'aguardando_pagamento'])
     .single()
 
   if (!ag) {
@@ -80,7 +80,12 @@ Deno.serve(async (req) => {
 
   const negocio = ag.negocios as any
   const janelaHoras = negocio?.janela_cancelamento_horas || 24
-  const dataHoraAg = new Date(`${ag.data}T${ag.hora}:00-03:00`)
+  const tz = negocio?.fuso_horario || 'America/Sao_Paulo'
+  // Converte data+hora local do negócio para UTC usando o fuso correto
+  const pivot = new Date(`${ag.data}T${ag.hora}:00+00:00`)
+  const pivotInTZ = pivot.toLocaleString('sv-SE', { timeZone: tz })
+  const tzDate = new Date(pivotInTZ.replace(' ', 'T') + '+00:00')
+  const dataHoraAg = new Date(pivot.getTime() + (pivot.getTime() - tzDate.getTime()))
   const agora = new Date()
   const diffHoras = (dataHoraAg.getTime() - agora.getTime()) / (1000 * 60 * 60)
 

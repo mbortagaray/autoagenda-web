@@ -367,3 +367,23 @@ body.is-impersonating .content { padding-top: 70px; }
   text-align: center; color: var(--text-muted); padding: 20px;
   font-size: 14px;
 }
+
+/* SELETOR DE NEGÓCIO */
+.negocio-option {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px;
+  margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
+  background: var(--white);
+}
+.negocio-option:hover { border-color: var(--primary); background: var(--bg); }
+.negocio-option-nome { font-weight: 500; font-size: 15px; }
+.negocio-option-arrow { color: var(--text-muted); font-size: 18px; }
+
+/* TROCAR NEGÓCIO */
+.btn-trocar {
+  background: none; border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.7); padding: 7px 14px; border-radius: 8px;
+  font-size: 13px; cursor: pointer; width: 100%; margin-bottom: 8px;
+  transition: all 0.2s; font-family: inherit;
+}
+.btn-trocar:hover { background: rgba(255,255,255,0.1); color: white; }

@@ -91,13 +91,13 @@ Deno.serve(async (req) => {
     )
   }
 
-  // Buscar agendamentos do dia (confirmados)
+  // Buscar agendamentos do dia (confirmados ou aguardando pagamento)
   const { data: agendamentos } = await supabase
     .from('agendamentos')
     .select('hora, duracao_min')
     .eq('profissional_id', profissionalId)
     .eq('data', data)
-    .eq('status', 'confirmado')
+    .in('status', ['confirmado', 'aguardando_pagamento'])
 
   // Montar intervalos ocupados
   const ocupados: { inicio: number, fim: number }[] = []
@@ -127,13 +127,13 @@ Deno.serve(async (req) => {
   }
 
   // Se a data é hoje, remover horários que já passaram
-  const agora = new Date()
-  const fusoOffset = negocio.fuso_horario === 'America/Sao_Paulo' ? -3 : 0
-  const agoraLocal = new Date(agora.getTime() + fusoOffset * 3600000)
-  const hojeStr = agoraLocal.toISOString().split('T')[0]
+  const tz = negocio.fuso_horario || 'America/Sao_Paulo'
+  const hojeStr = new Date().toLocaleDateString('sv-SE', { timeZone: tz })
 
   if (data === hojeStr) {
-    const minAtual = agoraLocal.getHours() * 60 + agoraLocal.getMinutes()
+    const timeStr = new Date().toLocaleTimeString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false })
+    const [hStr, mStr] = timeStr.replace(/^24:/, '00:').split(':')
+    const minAtual = parseInt(hStr) * 60 + parseInt(mStr)
     for (const slot of slots) {
       if (timeToMin(slot.hora) <= minAtual) {
         slot.disponivel = false

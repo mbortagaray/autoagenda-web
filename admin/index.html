@@ -34,6 +34,28 @@
   </div>
 </div>
 
+<!-- SEM NEGÓCIO -->
+<div id="semNegocioScreen" style="display:none" class="login-screen">
+  <div class="login-card" style="text-align:center">
+    <div class="login-logo">AutoAgenda</div>
+    <div class="login-sub">Sem negócio atribuído</div>
+    <p style="color:#86868b;font-size:14px;margin:0 0 24px;line-height:1.5">
+      Sua conta ainda não foi vinculada a nenhum negócio.<br>Entre em contato com o administrador.
+    </p>
+    <button class="btn btn-ghost" onclick="doLogout()">Sair</button>
+  </div>
+</div>
+
+<!-- SELETOR DE NEGÓCIO -->
+<div id="negocioSelectorScreen" style="display:none" class="login-screen">
+  <div class="login-card" style="max-width:400px">
+    <div class="login-logo">AutoAgenda</div>
+    <div class="login-sub">Selecione o negócio</div>
+    <div id="negocioSelectorList" style="margin:16px 0"></div>
+    <button class="btn btn-ghost" style="width:100%" onclick="doLogout()">Sair</button>
+  </div>
+</div>
+
 <!-- APP -->
 <div id="adminApp" style="display:none">
 
@@ -68,6 +90,7 @@
       </a>
     </nav>
     <div class="sidebar-footer">
+      <button id="btnTrocarNegocio" class="btn-trocar" style="display:none" onclick="showNegocioSelector()">⇄ Trocar negócio</button>
       <button class="btn-logout" onclick="doLogout()">Sair</button>
     </div>
   </div>
@@ -402,6 +425,6 @@
 
 <script src="impersonation.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=11"></script>
+<script src="app.js?v=12"></script>
 </body>
 </html>

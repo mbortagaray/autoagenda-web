@@ -197,6 +197,7 @@ function renderNegocios(list) {
       <span class="status-badge ${n.ativo ? 'active' : 'inactive'}">${n.ativo ? 'Ativo' : 'Inativo'}</span>
       <div class="table-actions">
         <button class="btn btn-sm btn-ghost" onclick="gerenciarProfissionais('${n.id}')">Profissionais</button>
+        <button class="btn btn-sm btn-ghost" onclick="gerenciarAdminsNegocio('${n.id}')">Admins</button>
         <button class="btn btn-sm btn-accent" onclick="entrarComoAdmin('${n.id}')">⚡ Entrar como admin</button>
         <button class="btn btn-sm ${n.ativo ? 'btn-danger' : 'btn-primary'}" onclick="toggleNegocio('${n.id}', ${n.ativo})">
           ${n.ativo ? 'Desativar' : 'Ativar'}
@@ -709,6 +710,78 @@ async function saveUsuario() {
   btn.textContent = 'Criado ✓'
   await loadUsuarios()
   setTimeout(() => closeModal('modalUsuario'), 1500)
+}
+
+// ---- ADMINS DO NEGÓCIO ----
+let adminsNegocioCurrentId = null
+
+async function gerenciarAdminsNegocio(negocioId) {
+  adminsNegocioCurrentId = negocioId
+  const neg = negocios.find(n => n.id === negocioId)
+  document.getElementById('modalAdminsNegocioTitle').textContent = `Admins — ${neg?.nome || ''}`
+  document.getElementById('adminsNegocioFeedback').style.display = 'none'
+  await loadAdminsNegocio(negocioId)
+  document.getElementById('modalAdminsNegocio').style.display = 'flex'
+}
+
+async function loadAdminsNegocio(negocioId) {
+  const [{ data: linked }, { data: allAdmins }] = await Promise.all([
+    sb.from('admin_users').select('id, user_id, email, role').eq('negocio_id', negocioId).neq('role', 'superadmin'),
+    sb.from('admin_users').select('user_id, email, role').neq('role', 'superadmin'),
+  ])
+
+  const uniqueMap = new Map()
+  for (const a of (allAdmins || [])) {
+    if (!uniqueMap.has(a.user_id)) uniqueMap.set(a.user_id, a)
+  }
+  const linkedIds = new Set((linked || []).map(l => l.user_id))
+  const available = [...uniqueMap.values()].filter(a => !linkedIds.has(a.user_id))
+
+  const listEl = document.getElementById('adminsNegocioList')
+  listEl.innerHTML = linked?.length
+    ? linked.map(u => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div>
+            <span style="font-size:14px;font-weight:500">${u.email || u.user_id}</span>
+            <span class="role-chip role-${u.role}" style="margin-left:8px">${u.role}</span>
+          </div>
+          <button class="btn btn-sm btn-danger" onclick="desvincularAdmin('${u.id}')">Desvincular</button>
+        </div>`).join('')
+    : '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">Nenhum admin vinculado.</div>'
+
+  const sel = document.getElementById('adminsNegocioSelect')
+  sel.disabled = !available.length
+  sel.innerHTML = available.length
+    ? '<option value="">Selecione...</option>' + available.map(a => `<option value="${a.user_id}">${a.email || a.user_id}</option>`).join('')
+    : '<option value="">Nenhum admin disponível</option>'
+}
+
+async function vincularAdminSelecionado() {
+  const userId = document.getElementById('adminsNegocioSelect').value
+  const feedback = document.getElementById('adminsNegocioFeedback')
+  feedback.style.display = 'none'
+  if (!userId || !adminsNegocioCurrentId) return
+
+  const { data: adminInfo } = await sb.from('admin_users').select('role, email').eq('user_id', userId).limit(1).single()
+  const { error } = await sb.from('admin_users').insert({
+    user_id: userId,
+    negocio_id: adminsNegocioCurrentId,
+    role: adminInfo.role,
+    email: adminInfo.email,
+  })
+
+  if (error) {
+    feedback.textContent = 'Erro: ' + error.message
+    feedback.style.display = 'block'
+    return
+  }
+  await loadAdminsNegocio(adminsNegocioCurrentId)
+}
+
+async function desvincularAdmin(adminUsersId) {
+  if (!confirm('Desvincular este admin do negócio?')) return
+  await sb.from('admin_users').delete().eq('id', adminUsersId)
+  await loadAdminsNegocio(adminsNegocioCurrentId)
 }
 
 // ---- TEMA ----

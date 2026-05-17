@@ -7,10 +7,10 @@ const corsHeaders = {
 }
 
 function tomorrowSaoPaulo() {
-  const now = new Date()
-  const saoPaulo = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
-  saoPaulo.setDate(saoPaulo.getDate() + 1)
-  return saoPaulo.toISOString().split('T')[0]
+  const todaySP = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' })
+  const d = new Date(todaySP + 'T12:00:00Z')
+  d.setUTCDate(d.getUTCDate() + 1)
+  return d.toISOString().split('T')[0]
 }
 
 Deno.serve(async (req) => {
