@@ -1,5 +1,11 @@
 recovered-*/
 _backup_local_before_github_*/
+.env
+.env.*
+!.env.e2e.example
+node_modules/
+playwright-report/
+test-results/
 supabase/.env
 supabase/.branches
 supabase/.temp
