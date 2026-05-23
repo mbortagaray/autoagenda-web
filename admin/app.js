@@ -11,6 +11,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
 let negocioId = null
 let negocio = null
+let currentAdminRole = null
 let servicos = []
 let profissionais = []
 let editingId = null
@@ -173,7 +174,7 @@ async function initAdmin() {
   const { data: { user } } = await sb.auth.getUser()
   const { data: rows } = await sb
     .from('admin_users')
-    .select('negocio_id, negocios(id, nome)')
+    .select('negocio_id, role, negocios(id, nome)')
     .eq('user_id', user.id)
     .not('negocio_id', 'is', null)
 
@@ -225,6 +226,8 @@ function filterNegocioSelector() {
 
 async function enterNegocio(id) {
   negocioId = id
+  const adminRow = adminNegocioRows.find(r => r.negocio_id === id)
+  currentAdminRole = adminRow?.role || null
   const { data: neg } = await sb.from('negocios').select('*').eq('id', negocioId).single()
   negocio = neg
 
@@ -236,6 +239,7 @@ async function enterNegocio(id) {
 
   const trocarBtn = document.getElementById('btnTrocarNegocio')
   if (trocarBtn) trocarBtn.style.display = adminNegocioRows.length > 1 ? '' : 'none'
+  updateUsuariosNavVisibility()
 
   document.getElementById('agendaDate').value = new Date().toISOString().split('T')[0]
 
@@ -256,6 +260,7 @@ function switchTab(tab) {
     document.querySelector(`[data-tab="${tab}"]`).textContent.trim()
 
   if (tab === 'clientes') loadClientes()
+  if (tab === 'usuarios') loadUsuariosOwners()
   if (tab === 'agenda') loadAgenda()
   if (tab === 'bloqueios') initBloqueios()
 
@@ -265,6 +270,37 @@ function switchTab(tab) {
 
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open')
+}
+
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+  const next = isDark ? 'light' : 'dark'
+  document.documentElement.setAttribute('data-theme', next)
+  localStorage.setItem('sa-theme', next)
+  setThemeIcons(next)
+}
+
+function setThemeIcons(theme) {
+  const icon = theme === 'dark' ? '☀️' : '🌙'
+  const desktop = document.getElementById('themeIcon')
+  const mobile = document.getElementById('themeIconMobile')
+  if (desktop) desktop.textContent = icon
+  if (mobile) mobile.textContent = icon
+}
+
+function initTheme() {
+  const saved = localStorage.getItem('sa-theme') || 'light'
+  document.documentElement.setAttribute('data-theme', saved)
+  setThemeIcons(saved)
+}
+
+function updateUsuariosNavVisibility() {
+  const nav = document.querySelector('[data-tab="usuarios"]')
+  if (!nav) return
+  nav.style.display = currentAdminRole === 'admin' ? '' : 'none'
+  if (currentAdminRole !== 'admin' && document.getElementById('tab-usuarios')?.classList.contains('active')) {
+    switchTab('agenda')
+  }
 }
 
 // ============ AGENDA ============
@@ -1090,6 +1126,105 @@ async function deleteBloqueioGrupo(idsCsv) {
   await loadBloqueios()
 }
 
+// ============ USUÁRIOS ============
+let ownerUsers = []
+
+async function loadUsuariosOwners() {
+  const container = document.getElementById('usuariosContent')
+  if (!container) return
+  if (currentAdminRole !== 'admin') {
+    container.innerHTML = '<div class="agenda-empty">Apenas usuários admin podem criar owners.</div>'
+    return
+  }
+
+  container.innerHTML = '<div class="loading-sm">Carregando...</div>'
+  const { data, error } = await sb
+    .from('admin_users')
+    .select('id, user_id, email, nome, role, negocio_id')
+    .eq('negocio_id', negocioId)
+    .eq('role', 'owner')
+    .order('nome')
+
+  if (error) {
+    container.innerHTML = `<div class="agenda-empty">Erro ao carregar usuários: ${error.message}</div>`
+    return
+  }
+
+  ownerUsers = data || []
+  renderUsuariosOwners(ownerUsers)
+}
+
+function renderUsuariosOwners(list) {
+  const container = document.getElementById('usuariosContent')
+  if (!list.length) {
+    container.innerHTML = '<div class="agenda-empty">Nenhum owner cadastrado neste negócio</div>'
+    return
+  }
+
+  container.innerHTML = '<div class="table-card">' + list.map(u => `
+    <div class="table-row">
+      <div class="table-main">
+        <span class="role-chip role-owner">owner</span>
+        <div class="table-name" style="margin-top:6px">${u.nome || '-'}</div>
+        <div class="table-sub">${u.email || u.user_id}</div>
+      </div>
+    </div>
+  `).join('') + '</div>'
+}
+
+function showUsuarioOwnerForm() {
+  if (currentAdminRole !== 'admin') return
+  document.getElementById('uOwnerNome').value = ''
+  document.getElementById('uOwnerEmail').value = ''
+  document.getElementById('modalUsuarioOwnerError').style.display = 'none'
+  document.getElementById('modalUsuarioOwnerSuccess').style.display = 'none'
+  document.getElementById('btnUsuarioOwner').disabled = false
+  document.getElementById('btnUsuarioOwner').textContent = 'Criar e enviar acesso'
+  document.getElementById('modalUsuarioOwner').style.display = 'flex'
+}
+
+async function createOwnerUser() {
+  const nome = document.getElementById('uOwnerNome').value.trim()
+  const email = document.getElementById('uOwnerEmail').value.trim()
+  const errEl = document.getElementById('modalUsuarioOwnerError')
+  const sucEl = document.getElementById('modalUsuarioOwnerSuccess')
+  const btn = document.getElementById('btnUsuarioOwner')
+  errEl.style.display = 'none'
+  sucEl.style.display = 'none'
+
+  if (!nome || !email) {
+    errEl.textContent = 'Nome e email são obrigatórios'
+    errEl.style.display = 'block'
+    return
+  }
+
+  btn.disabled = true
+  btn.textContent = 'Criando...'
+  try {
+    const { data: { session } } = await sb.auth.getSession()
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/criar-admin-user`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ nome, email, role: 'owner', negocio_id: negocioId }),
+    })
+    const result = await res.json().catch(() => ({}))
+    if (!res.ok || result.error) throw new Error(result.error || 'Erro ao criar usuário')
+
+    sucEl.textContent = 'Owner criado. Email de acesso enviado.'
+    sucEl.style.display = 'block'
+    await loadUsuariosOwners()
+    setTimeout(() => closeModal('modalUsuarioOwner'), 1000)
+  } catch (err) {
+    errEl.textContent = err.message
+    errEl.style.display = 'block'
+    btn.disabled = false
+    btn.textContent = 'Criar e enviar acesso'
+  }
+}
+
 // ============ CLIENTES ============
 let allClientes = []
 
@@ -1191,6 +1326,7 @@ function closeModal(id) {
 }
 
 // ============ INIT ============
+initTheme()
 checkAuth()
 
 // ============ IMPERSONATION ============

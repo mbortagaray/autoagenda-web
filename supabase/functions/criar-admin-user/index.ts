@@ -81,20 +81,32 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    // Verificar que o chamador é superadmin
+    // Superadmin pode criar qualquer perfil. Admin só pode criar owner no próprio negócio.
     const authHeader = req.headers.get('Authorization') || ''
     const token = authHeader.replace(/^Bearer\s+/i, '')
     const { data: userData } = await sb.auth.getUser(token)
-    const { data: caller } = await sb
+    const callerUserId = userData.user?.id || ''
+    const { data: callerRows } = await sb
       .from('admin_users')
-      .select('role')
-      .eq('user_id', userData.user?.id || '')
-      .single()
-    if (!caller || caller.role !== 'superadmin') {
+      .select('role, negocio_id')
+      .eq('user_id', callerUserId)
+    if (!callerRows?.length) {
       return new Response(JSON.stringify({ error: 'Acesso negado' }), { status: 403, headers: corsHeaders })
     }
 
     const { email, senha, nome, negocio_id, role } = await req.json()
+    const isSuperadmin = callerRows.some((r: any) => r.role === 'superadmin')
+    const isAdminForNegocio = callerRows.some((r: any) => r.role === 'admin' && r.negocio_id === negocio_id)
+
+    if (!isSuperadmin) {
+      if (role !== 'owner' || !negocio_id || !isAdminForNegocio) {
+        return new Response(JSON.stringify({ error: 'Admin só pode criar owner do próprio negócio' }), {
+          status: 403,
+          headers: corsHeaders,
+        })
+      }
+    }
+
     const allowNoNegocio = role === 'superadmin' || role === 'admin'
 
     if (!email || !role || !nome || (!allowNoNegocio && !negocio_id)) {

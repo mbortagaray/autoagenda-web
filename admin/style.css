@@ -105,6 +105,12 @@ body.is-impersonating .content { padding-top: 70px; }
 }
 .form-error { background: #fff0f0; color: var(--danger); }
 .form-success { background: #edf8ef; color: #1e7a34; }
+.form-hint {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 2px 0 14px;
+}
 
 /* BUTTONS */
 .btn {
@@ -159,6 +165,15 @@ body.is-impersonating .content { padding-top: 70px; }
   transition: all 0.2s;
 }
 .btn-logout:hover { background: rgba(255,255,255,0.1); color: white; }
+.btn-theme-toggle {
+  background: none; border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.7); padding: 7px 14px;
+  border-radius: 8px; font-size: 13px; cursor: pointer;
+  width: 100%; margin-bottom: 8px; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-family: inherit;
+}
+.btn-theme-toggle:hover { background: rgba(255,255,255,0.1); color: white; }
 
 .content {
   margin-left: 220px; padding: 24px;
@@ -179,6 +194,11 @@ body.is-impersonating .content { padding-top: 70px; }
 .btn-logout-mobile {
   background: none; border: none; color: rgba(255,255,255,0.7);
   font-size: 13px; cursor: pointer;
+}
+.mobile-actions { display: flex; align-items: center; gap: 12px; }
+.btn-theme-mobile {
+  background: none; border: none; color: white;
+  cursor: pointer; font-size: 16px; line-height: 1;
 }
 
 @media (max-width: 768px) {
@@ -288,6 +308,11 @@ body.is-impersonating .content { padding-top: 70px; }
   padding: 3px 10px; border-radius: 20px; font-size: 11px;
   font-weight: 600; background: #e8f0fe; color: var(--primary);
 }
+.role-chip {
+  padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.3px;
+}
+.role-owner { background: #e8f0fe; color: #1a73e8; }
 .table-actions { display: flex; gap: 6px; }
 .table-actions button {
   padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border);
@@ -387,3 +412,34 @@ body.is-impersonating .content { padding-top: 70px; }
   transition: all 0.2s; font-family: inherit;
 }
 .btn-trocar:hover { background: rgba(255,255,255,0.1); color: white; }
+
+/* DARK MODE */
+[data-theme="dark"] {
+  --bg: #111118;
+  --white: #1c1c28;
+  --border: #2a2a3e;
+  --text: #e2e2f0;
+  --text-muted: #9090aa;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+}
+[data-theme="dark"] .login-screen { background: #0a0a14; }
+[data-theme="dark"] .login-error,
+[data-theme="dark"] .form-error { background: #3e1a1a; color: #ff7070; }
+[data-theme="dark"] .form-success { background: #1a3e22; color: #5cbb6a; }
+[data-theme="dark"] .modal,
+[data-theme="dark"] .agenda-filters select,
+[data-theme="dark"] .date-nav input[type="date"],
+[data-theme="dark"] .agenda-actions button,
+[data-theme="dark"] .table-actions button,
+[data-theme="dark"] .horario-row select,
+[data-theme="dark"] .horario-row input {
+  background: var(--white);
+  color: var(--text);
+  border-color: var(--border);
+}
+[data-theme="dark"] .role-owner { background: #1a2a4e; color: #70a8ff; }
+[data-theme="dark"] .status-confirmado { background: #1a3a20; color: #5cbb6a; }
+[data-theme="dark"] .status-cancelado { background: #3a1a20; color: #ff7070; }
+[data-theme="dark"] .checkbox-item { background: var(--white); }
+[data-theme="dark"] .checkbox-item.checked { background: var(--primary-light); border-color: var(--primary-light); }
