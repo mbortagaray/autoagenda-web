@@ -12,6 +12,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 let negocioId = null
 let negocio = null
 let currentAdminRole = null
+let adminDashboardMode = false
 let servicos = []
 let profissionais = []
 let editingId = null
@@ -185,6 +186,12 @@ async function initAdmin() {
     return
   }
 
+  const hasAdminRole = adminNegocioRows.some(r => r.role === 'admin')
+  if (hasAdminRole && adminNegocioRows.length > 1) {
+    showAdminDashboard()
+    return
+  }
+
   if (adminNegocioRows.length === 1) {
     await enterNegocio(adminNegocioRows[0].negocio_id)
     return
@@ -199,6 +206,10 @@ function showSemNegocio() {
 }
 
 function showNegocioSelector() {
+  if (adminNegocioRows.some(r => r.role === 'admin') && adminNegocioRows.length > 1) {
+    showAdminDashboard()
+    return
+  }
   document.getElementById('loginScreen').style.display = 'none'
   document.getElementById('adminApp').style.display = 'none'
   const search = document.getElementById('negocioSelectorSearch')
@@ -224,7 +235,69 @@ function filterNegocioSelector() {
   renderNegocioSelectorList(filtered)
 }
 
+function showAdminDashboard() {
+  adminDashboardMode = true
+  currentAdminRole = 'admin'
+  negocioId = null
+  negocio = null
+
+  document.getElementById('semNegocioScreen').style.display = 'none'
+  document.getElementById('negocioSelectorScreen').style.display = 'none'
+  document.getElementById('loginScreen').style.display = 'none'
+  document.getElementById('adminApp').style.display = 'flex'
+  document.getElementById('sidebarNegocio').textContent = 'Admin'
+
+  const trocarBtn = document.getElementById('btnTrocarNegocio')
+  if (trocarBtn) trocarBtn.style.display = 'none'
+  setAdminDashboardNav(true)
+  renderAdminNegocios(adminNegocioRows)
+  switchTab('negocios')
+}
+
+function setAdminDashboardNav(isDashboard) {
+  const dashboardOnly = ['navNegocios']
+  const tenantOnly = ['navAgenda', 'navServicos', 'navProfissionais', 'navBloqueios', 'navClientes', 'navConfig']
+  dashboardOnly.forEach(id => {
+    const el = document.getElementById(id)
+    if (el) el.style.display = isDashboard ? '' : 'none'
+  })
+  tenantOnly.forEach(id => {
+    const el = document.getElementById(id)
+    if (el) el.style.display = isDashboard ? 'none' : ''
+  })
+}
+
+function renderAdminNegocios(rows) {
+  const container = document.getElementById('adminNegociosContent')
+  if (!container) return
+  if (!rows.length) {
+    container.innerHTML = '<div class="agenda-empty">Nenhum negócio encontrado</div>'
+    return
+  }
+
+  container.innerHTML = '<div class="table-card">' + rows.map(r => `
+    <div class="table-row negocio-row">
+      <div class="table-main">
+        <div class="table-name">${r.negocios?.nome || r.negocio_id}</div>
+        <div class="table-sub">${r.role === 'admin' ? 'Admin' : 'Owner'}</div>
+      </div>
+      <div class="table-actions">
+        <button onclick="enterNegocio('${r.negocio_id}')">Entrar</button>
+      </div>
+    </div>
+  `).join('') + '</div>'
+}
+
+function filterAdminNegocios() {
+  const q = document.getElementById('adminNegocioSearch').value.toLowerCase().trim()
+  const filtered = q
+    ? adminNegocioRows.filter(r => (r.negocios?.nome || '').toLowerCase().includes(q))
+    : adminNegocioRows
+  renderAdminNegocios(filtered)
+}
+
 async function enterNegocio(id) {
+  adminDashboardMode = false
   negocioId = id
   const adminRow = adminNegocioRows.find(r => r.negocio_id === id)
   currentAdminRole = adminRow?.role || null
@@ -239,7 +312,9 @@ async function enterNegocio(id) {
 
   const trocarBtn = document.getElementById('btnTrocarNegocio')
   if (trocarBtn) trocarBtn.style.display = adminNegocioRows.length > 1 ? '' : 'none'
+  setAdminDashboardNav(false)
   updateUsuariosNavVisibility()
+  switchTab('agenda')
 
   document.getElementById('agendaDate').value = new Date().toISOString().split('T')[0]
 
@@ -1138,12 +1213,15 @@ async function loadUsuariosOwners() {
   }
 
   container.innerHTML = '<div class="loading-sm">Carregando...</div>'
-  const { data, error } = await sb
+  const allowedNegocios = adminNegocioRows.filter(r => r.role === 'admin').map(r => r.negocio_id)
+  let query = sb
     .from('admin_users')
-    .select('id, user_id, email, nome, role, negocio_id')
-    .eq('negocio_id', negocioId)
+    .select('id, user_id, email, nome, role, negocio_id, negocios(id, nome)')
     .eq('role', 'owner')
     .order('nome')
+
+  query = negocioId ? query.eq('negocio_id', negocioId) : query.in('negocio_id', allowedNegocios)
+  const { data, error } = await query
 
   if (error) {
     container.innerHTML = `<div class="agenda-empty">Erro ao carregar usuários: ${error.message}</div>`
@@ -1166,7 +1244,7 @@ function renderUsuariosOwners(list) {
       <div class="table-main">
         <span class="role-chip role-owner">owner</span>
         <div class="table-name" style="margin-top:6px">${u.nome || '-'}</div>
-        <div class="table-sub">${u.email || u.user_id}</div>
+        <div class="table-sub">${u.email || u.user_id}${u.negocios?.nome ? ` &bull; ${u.negocios.nome}` : ''}</div>
       </div>
     </div>
   `).join('') + '</div>'
@@ -1176,6 +1254,18 @@ function showUsuarioOwnerForm() {
   if (currentAdminRole !== 'admin') return
   document.getElementById('uOwnerNome').value = ''
   document.getElementById('uOwnerEmail').value = ''
+  const negocioGroup = document.getElementById('uOwnerNegocioGroup')
+  const negocioSelect = document.getElementById('uOwnerNegocio')
+  const adminRows = adminNegocioRows.filter(r => r.role === 'admin')
+  if (!negocioId && adminRows.length > 1) {
+    negocioGroup.style.display = 'block'
+    negocioSelect.innerHTML = '<option value="">Selecione...</option>' + adminRows.map(r =>
+      `<option value="${r.negocio_id}">${r.negocios?.nome || r.negocio_id}</option>`
+    ).join('')
+  } else {
+    negocioGroup.style.display = 'none'
+    negocioSelect.innerHTML = ''
+  }
   document.getElementById('modalUsuarioOwnerError').style.display = 'none'
   document.getElementById('modalUsuarioOwnerSuccess').style.display = 'none'
   document.getElementById('btnUsuarioOwner').disabled = false
@@ -1186,6 +1276,7 @@ function showUsuarioOwnerForm() {
 async function createOwnerUser() {
   const nome = document.getElementById('uOwnerNome').value.trim()
   const email = document.getElementById('uOwnerEmail').value.trim()
+  const ownerNegocioId = negocioId || document.getElementById('uOwnerNegocio').value
   const errEl = document.getElementById('modalUsuarioOwnerError')
   const sucEl = document.getElementById('modalUsuarioOwnerSuccess')
   const btn = document.getElementById('btnUsuarioOwner')
@@ -1194,6 +1285,11 @@ async function createOwnerUser() {
 
   if (!nome || !email) {
     errEl.textContent = 'Nome e email são obrigatórios'
+    errEl.style.display = 'block'
+    return
+  }
+  if (!ownerNegocioId) {
+    errEl.textContent = 'Selecione o negócio'
     errEl.style.display = 'block'
     return
   }
@@ -1208,7 +1304,7 @@ async function createOwnerUser() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({ nome, email, role: 'owner', negocio_id: negocioId }),
+      body: JSON.stringify({ nome, email, role: 'owner', negocio_id: ownerNegocioId }),
     })
     const result = await res.json().catch(() => ({}))
     if (!res.ok || result.error) throw new Error(result.error || 'Erro ao criar usuário')

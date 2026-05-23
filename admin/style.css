@@ -375,6 +375,12 @@ body.is-impersonating .content { padding-top: 70px; }
 
 /* SEARCH */
 .search-bar { margin-bottom: 16px; }
+.negocios-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 420px);
+  gap: 12px;
+  margin-bottom: 16px;
+}
 
 /* CONFIG */
 .config-section {
