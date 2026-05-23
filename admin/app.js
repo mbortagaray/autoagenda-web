@@ -282,7 +282,7 @@ function renderAdminNegocios(rows) {
         <div class="table-sub">${r.role === 'admin' ? 'Admin' : 'Owner'}</div>
       </div>
       <div class="table-actions">
-        <button onclick="enterNegocio('${r.negocio_id}')">Entrar</button>
+        <button onclick="${r.role === 'admin' ? 'entrarComoTenant' : 'enterNegocio'}('${r.negocio_id}')">Entrar</button>
       </div>
     </div>
   `).join('') + '</div>'
@@ -294,6 +294,40 @@ function filterAdminNegocios() {
     ? adminNegocioRows.filter(r => (r.negocios?.nome || '').toLowerCase().includes(q))
     : adminNegocioRows
   renderAdminNegocios(filtered)
+}
+
+async function entrarComoTenant(id) {
+  const realAdminAuth = localStorage.getItem('autoagenda-admin-auth')
+  if (realAdminAuth) {
+    sessionStorage.setItem('autoagenda_real_admin_auth', realAdminAuth)
+    sessionStorage.setItem('autoagenda_impersonation_return_to', '/admin')
+  }
+
+  const { data: { session } } = await sb.auth.getSession()
+  if (!session?.access_token) {
+    sessionStorage.removeItem('autoagenda_real_admin_auth')
+    sessionStorage.removeItem('autoagenda_impersonation_return_to')
+    alert('Sessao expirada. Entre novamente.')
+    return
+  }
+
+  const res = await fetch(SUPABASE_URL + '/functions/v1/impersonate-tenant', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + session.access_token
+    },
+    body: JSON.stringify({ negocio_id: id })
+  })
+  const result = await res.json()
+  if (!res.ok || result.error) {
+    sessionStorage.removeItem('autoagenda_real_admin_auth')
+    sessionStorage.removeItem('autoagenda_impersonation_return_to')
+    alert('Erro: ' + (result.error || 'Nao foi possivel entrar como tenant'))
+    return
+  }
+
+  window.location.href = result.url
 }
 
 async function enterNegocio(id) {
@@ -1438,6 +1472,11 @@ function checkImpersonation() {
 }
 
 function sairImpersonation() {
+  if (typeof sairImpersonationPreservandoSuperadmin === 'function') {
+    sairImpersonationPreservandoSuperadmin()
+    return
+  }
+
   sb.auth.signOut().then(() => {
     window.location.href = 'https://agenda.mdinamic.com.br/superadmin'
   })

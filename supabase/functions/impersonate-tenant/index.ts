@@ -26,19 +26,26 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Token inválido' }), { status: 401, headers: corsHeaders })
     }
 
-    const { data: adminUser } = await sb
+    const { data: adminRows } = await sb
       .from('admin_users')
-      .select('role')
+      .select('role, negocio_id')
       .eq('user_id', user.id)
-      .single()
 
-    if (!adminUser || adminUser.role !== 'superadmin') {
+    if (!adminRows?.length) {
       return new Response(JSON.stringify({ error: 'Acesso negado' }), { status: 403, headers: corsHeaders })
     }
 
     const { negocio_id } = await req.json()
     if (!negocio_id) {
       return new Response(JSON.stringify({ error: 'negocio_id obrigatório' }), { status: 400, headers: corsHeaders })
+    }
+
+    const canImpersonate = adminRows.some((row: any) =>
+      row.role === 'superadmin' || (row.role === 'admin' && row.negocio_id === negocio_id)
+    )
+
+    if (!canImpersonate) {
+      return new Response(JSON.stringify({ error: 'Acesso negado' }), { status: 403, headers: corsHeaders })
     }
 
     const { data: owner } = await sb

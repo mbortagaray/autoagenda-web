@@ -1,4 +1,7 @@
 const IMPERSONATION_STORAGE_KEY = 'autoagenda_impersonating'
+const IMPERSONATION_REAL_ADMIN_AUTH_KEY = 'autoagenda_real_admin_auth'
+const IMPERSONATION_RETURN_TO_KEY = 'autoagenda_impersonation_return_to'
+const ADMIN_AUTH_STORAGE_KEY = 'autoagenda-admin-auth'
 
 function hasImpersonationParam() {
   const searchParams = new URLSearchParams(window.location.search)
@@ -12,12 +15,29 @@ if (hasImpersonationParam()) {
 
 function sairImpersonationPreservandoSuperadmin() {
   sessionStorage.removeItem(IMPERSONATION_STORAGE_KEY)
+  const realAdminAuth = sessionStorage.getItem(IMPERSONATION_REAL_ADMIN_AUTH_KEY)
+  const returnTo = sessionStorage.getItem(IMPERSONATION_RETURN_TO_KEY)
+
+  sessionStorage.removeItem(IMPERSONATION_REAL_ADMIN_AUTH_KEY)
+  sessionStorage.removeItem(IMPERSONATION_RETURN_TO_KEY)
+
+  if (realAdminAuth) {
+    localStorage.setItem(ADMIN_AUTH_STORAGE_KEY, realAdminAuth)
+    window.location.href = returnTo || '/admin'
+    return
+  }
 
   window.close()
   setTimeout(() => {
     window.location.href = 'https://agenda.mdinamic.com.br/superadmin'
   }, 150)
-}document.addEventListener('click', (event) => {
+}
+
+function sairImpersonation() {
+  sairImpersonationPreservandoSuperadmin()
+}
+
+document.addEventListener('click', (event) => {
   if (!event.target.closest('.impersonation-exit')) return
   event.preventDefault()
   event.stopImmediatePropagation()
