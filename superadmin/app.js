@@ -92,7 +92,7 @@ async function doLogout() {
 function hasRecoveryToken() {
   const search = new URLSearchParams(window.location.search)
   const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
-  return search.get('reset_password') === '1' || hash.get('type') === 'recovery' || hash.has('access_token')
+  return search.get('reset_password') === '1' || hash.get('type') === 'recovery'
 }
 
 function setResetMessage(message, isError = true) {
