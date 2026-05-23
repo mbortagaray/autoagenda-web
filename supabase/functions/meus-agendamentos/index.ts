@@ -1,5 +1,5 @@
-// Edge Function: GET /meus-agendamentos?negocio_id=...&telefone=...&pin=1234
-// Retorna agendamentos futuros do cliente (requer PIN)
+// Edge Function: GET /meus-agendamentos?negocio_id=...&telefone=...
+// Retorna agendamentos futuros do cliente.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -17,11 +17,10 @@ Deno.serve(async (req) => {
   const url = new URL(req.url)
   const negocioId = url.searchParams.get('negocio_id')
   const telefone = url.searchParams.get('telefone')?.replace(/\D/g, '')
-  const pin = url.searchParams.get('pin')
 
-  if (!negocioId || !telefone || telefone.length < 10 || !pin) {
+  if (!negocioId || !telefone || telefone.length < 10) {
     return new Response(
-      JSON.stringify({ error: 'Informe negocio_id, telefone e pin' }),
+      JSON.stringify({ error: 'Informe negocio_id e telefone' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
@@ -31,10 +30,10 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   )
 
-  // Validar cliente + PIN
+  // Validar cliente
   const { data: cliente } = await supabase
     .from('clientes')
-    .select('id, pin')
+    .select('id')
     .eq('negocio_id', negocioId)
     .eq('telefone', telefone)
     .single()
@@ -43,13 +42,6 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ error: 'Cliente não encontrado' }),
       { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-  }
-
-  if (cliente.pin !== pin) {
-    return new Response(
-      JSON.stringify({ error: 'PIN incorreto' }),
-      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 

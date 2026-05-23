@@ -1,5 +1,5 @@
-// Edge Function: GET /cliente-lookup?negocio_id=...&telefone=...&pin=1234
-// Busca cliente pelo telefone + PIN. Sem PIN, só informa se existe.
+// Edge Function: GET /cliente-lookup?negocio_id=...&telefone=...
+// Busca cliente pelo telefone.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -17,7 +17,6 @@ Deno.serve(async (req) => {
   const url = new URL(req.url)
   const negocioId = url.searchParams.get('negocio_id')
   const telefone = url.searchParams.get('telefone')?.replace(/\D/g, '')
-  const pin = url.searchParams.get('pin')
 
   if (!negocioId || !telefone || telefone.length < 10) {
     return new Response(
@@ -33,7 +32,7 @@ Deno.serve(async (req) => {
 
   const { data: cliente } = await supabase
     .from('clientes')
-    .select('id, nome, telefone, pin')
+    .select('id, nome, telefone')
     .eq('negocio_id', negocioId)
     .eq('telefone', telefone)
     .single()
@@ -46,38 +45,10 @@ Deno.serve(async (req) => {
     )
   }
 
-  // Cliente existe mas não enviou PIN — informa que precisa do PIN
-  if (!pin) {
-    return new Response(
-      JSON.stringify({
-        encontrado: true,
-        cadastrado: true,
-        tem_pin: !!cliente.pin,
-        autenticado: false,
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-  }
-
-  // Validar PIN
-  if (cliente.pin && cliente.pin !== pin) {
-    return new Response(
-      JSON.stringify({
-        encontrado: true,
-        cadastrado: true,
-        autenticado: false,
-        erro: 'PIN incorreto',
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-  }
-
-  // PIN correto (ou cliente sem PIN ainda — primeiro acesso com PIN)
   return new Response(
     JSON.stringify({
       encontrado: true,
       cadastrado: true,
-      autenticado: true,
       nome: cliente.nome,
     }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

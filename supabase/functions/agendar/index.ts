@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
   }
 
   const body = await req.json()
-  const { negocio_id, profissional_id, servico_id, data, hora, cliente_nome, cliente_telefone, cliente_email, cliente_pin } = body
+  const { negocio_id, profissional_id, servico_id, data, hora, cliente_nome, cliente_telefone, cliente_email } = body
 
   // Validar campos obrigatórios
   if (!negocio_id || !profissional_id || !servico_id || !data || !hora || !cliente_nome || !cliente_telefone) {
@@ -124,11 +124,10 @@ Deno.serve(async (req) => {
     .eq('id', profissional_id)
     .single()
 
-  // Salvar/atualizar cliente (com PIN se fornecido)
+  // Salvar/atualizar cliente
   const telLimpo = cliente_telefone.replace(/\D/g, '')
   const clienteData: any = { negocio_id, nome: cliente_nome, telefone: telLimpo }
   if (cliente_email) clienteData.email = cliente_email
-  if (cliente_pin) clienteData.pin = cliente_pin
   await supabase
     .from('clientes')
     .upsert(clienteData, { onConflict: 'negocio_id,telefone' })

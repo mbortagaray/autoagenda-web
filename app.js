@@ -48,15 +48,6 @@ function formatPhone(value) {
   return formatPhoneDigits(normalizePhone(value))
 }
 
-// ---- PIN AUTOMÁTICO ----
-// Gerado a partir do telefone: remove não-dígitos, remove primeiro 9, pega 5 primeiros dígitos
-// Ex: 98754-2120 → 87542120 → 87542
-function gerarPin(telefone) {
-  const digits = telefone.replace(/\D/g, '')
-  const semNove = digits.replace(/^9/, '')
-  return semNove.slice(0, 5)
-}
-
 // ---- STATE ----
 let config = null
 let avisosAgenda = []
@@ -68,7 +59,6 @@ let state = {
   nome: '',
   tel: '',
   email: '',
-  pin: '',
   mesAtual: new Date(),
   slotsData: null,
   clienteEncontrado: false,
@@ -178,7 +168,6 @@ async function criarAgendamento() {
       cliente_nome: state.nome,
       cliente_telefone: state.tel,
       cliente_email: state.email,
-      // PIN não enviado — gerado no servidor a partir do telefone
     }),
   })
   return res.json()
@@ -194,8 +183,7 @@ async function buscarCliente(telefone) {
 
 async function buscarMeusAgendamentos(telefone) {
   const tel = normalizePhone(telefone)
-  const pin = gerarPin(tel)
-  const params = new URLSearchParams({ negocio_id: config.negocio.id, telefone: tel, pin })
+  const params = new URLSearchParams({ negocio_id: config.negocio.id, telefone: tel })
   const res = await fetch(`${FUNCTIONS_URL}/meus-agendamentos?${params}`, { headers: ANON_HEADERS })
   return res.json()
 }
@@ -831,13 +819,10 @@ async function onTelInput(el) {
     nomeGroup.style.display = 'none'
     state.clienteEncontrado = false
     state.nome = ''
-    state.pin = ''
     checkStep4()
     return
   }
 
-  // PIN gerado automaticamente
-  state.pin = gerarPin(tel)
   state.tel = el.value
 
   clearTimeout(lookupTimer)
@@ -870,7 +855,6 @@ function checkStep4() {
   const nomeOk = state.clienteEncontrado || nomeInput.length >= 2
   if (nomeInput) state.nome = nomeInput
   state.tel = document.getElementById('inputTel').value
-  state.pin = gerarPin(tel)
 
   document.getElementById('btnStep4').disabled = !(telOk && nomeOk)
 }
@@ -1558,7 +1542,7 @@ function goBackFromDate() {
 }
 
 function reiniciar() {
-  state = { servico: null, profissional: null, data: null, hora: null, nome: '', tel: '', email: '', pin: '', mesAtual: new Date(), slotsData: null, clienteEncontrado: false, proximaData: null, hojeEncerrado: false, diaLotado: false }
+  state = { servico: null, profissional: null, data: null, hora: null, nome: '', tel: '', email: '', mesAtual: new Date(), slotsData: null, clienteEncontrado: false, proximaData: null, hojeEncerrado: false, diaLotado: false }
   document.getElementById('inputNome').value = ''
   document.getElementById('inputTel').value = ''
   document.getElementById('clienteFeedback').textContent = ''

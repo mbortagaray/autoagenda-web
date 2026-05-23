@@ -1353,22 +1353,10 @@ function renderClientes(list) {
     <div class="table-row">
       <div class="table-main">
         <div class="table-name">${c.nome}</div>
-        <div class="table-sub">${formatPhone(c.telefone)} ${c.pin ? '&bull; PIN definido' : '&bull; Sem PIN'}</div>
+        <div class="table-sub">${formatPhone(c.telefone)}</div>
       </div>
-      <div class="table-actions">
-        <button onclick="resetPin('${c.id}', '${c.nome}')">Novo PIN</button>
-      </div>
-      <div class="pin-result" id="pinResult_${c.id}" style="display:none"></div>
     </div>
   `).join('') + '</div>'
-}
-
-async function resetPin(id, nome) {
-  if (!confirm('Gerar novo PIN para ' + nome + '? Informe o novo PIN ao cliente.')) return
-  const novoPin = String(Math.floor(1000 + Math.random() * 9000))
-  await sb.from('clientes').update({ pin: novoPin }).eq('id', id)
-  alert('Novo PIN para ' + nome + ':\n\n' + novoPin + '\n\nInforme este PIN ao cliente.')
-  loadClientes()
 }
 
 // ============ CONFIG ============
