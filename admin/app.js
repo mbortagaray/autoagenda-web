@@ -193,7 +193,12 @@ async function initAdmin() {
   }
 
   if (adminNegocioRows.length === 1) {
-    await enterNegocio(adminNegocioRows[0].negocio_id)
+    const row = adminNegocioRows[0]
+    if (row.role === 'admin') {
+      showAdminDashboard()
+    } else {
+      await enterNegocio(row.negocio_id)
+    }
     return
   }
 
@@ -222,7 +227,7 @@ function showNegocioSelector() {
 function renderNegocioSelectorList(rows) {
   const list = document.getElementById('negocioSelectorList')
   list.innerHTML = rows.length ? rows.map(r => `
-    <div class="negocio-option" onclick="enterNegocio('${r.negocio_id}')">
+    <div class="negocio-option" onclick="${r.role === 'admin' ? 'entrarComoTenant' : 'enterNegocio'}('${r.negocio_id}')">
       <span class="negocio-option-nome">${r.negocios?.nome || r.negocio_id}</span>
       <span class="negocio-option-arrow">→</span>
     </div>
