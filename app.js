@@ -77,6 +77,71 @@ let state = {
   diaLotado: false,
 }
 
+const BOOKING_STATE_KEY = 'autoagenda_booking_state'
+
+function getCleanCurrentUrl(extraParams = {}) {
+  const url = new URL(window.location.href)
+  url.hash = ''
+  url.searchParams.delete('code')
+  url.searchParams.delete('auth_flow')
+  Object.entries(extraParams).forEach(([key, value]) => {
+    if (value === null || value === undefined || value === '') url.searchParams.delete(key)
+    else url.searchParams.set(key, value)
+  })
+  return url.toString()
+}
+
+function saveBookingStateForAuth() {
+  if (!state.servico || !state.profissional || !state.data || !state.hora) return
+  sessionStorage.setItem(BOOKING_STATE_KEY, JSON.stringify({
+    slug,
+    servico: state.servico,
+    profissional: state.profissional,
+    data: state.data,
+    hora: state.hora,
+    savedAt: Date.now(),
+  }))
+}
+
+function getSavedBookingState() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(BOOKING_STATE_KEY) || 'null')
+    if (!saved || saved.slug !== slug) return null
+    if (Date.now() - Number(saved.savedAt || 0) > 30 * 60 * 1000) {
+      sessionStorage.removeItem(BOOKING_STATE_KEY)
+      return null
+    }
+    return saved
+  } catch (e) {
+    sessionStorage.removeItem(BOOKING_STATE_KEY)
+    return null
+  }
+}
+
+function isAuthReturn() {
+  const params = new URLSearchParams(window.location.search)
+  return params.get('auth_flow') === 'agendar'
+    || params.has('code')
+    || window.location.hash.includes('access_token')
+    || window.location.hash.includes('step4')
+}
+
+function restoreBookingState(saved) {
+  const servico = config.servicos.find(s => s.id === saved?.servico)
+  const profissional = config.profissionais.find(p => p.id === saved?.profissional)
+  if (!servico || !profissional || !saved?.data || !saved?.hora) return false
+
+  selectServico(servico.id)
+  renderProfs()
+  selectProf(profissional.id)
+  state.data = saved.data
+  state.hora = saved.hora
+
+  const [ano, mes] = saved.data.split('-').map(Number)
+  if (ano && mes) state.mesAtual = new Date(ano, mes - 1, 1)
+  return true
+}
+
 // ---- API CALLS ----
 const ANON_HEADERS = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
 
@@ -205,10 +270,11 @@ async function init() {
         const tel = userMeta?.telefone
 
         // Se veio de callback de auth com #step4 → voltar para step4
-        if (window.location.hash.includes('step4') || window.location.hash.includes('access_token')) {
-          iniciarFluxoAdaptativo()
+        const savedBooking = getSavedBookingState()
+
+        if (isAuthReturn() && savedBooking && restoreBookingState(savedBooking)) {
           showLoading(false)
-          // Aguardar render e ir para step4
+          window.history.replaceState({}, document.title, getCleanCurrentUrl())
           setTimeout(() => goStep(4), 300)
           return
         }
@@ -1255,10 +1321,11 @@ async function loginGoogleAgendar() {
   if (!sb) return
   const errEl = document.getElementById('loginError4') || document.getElementById('loginError0')
   if (errEl) errEl.style.display = 'none'
+  saveBookingStateForAuth()
   const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: window.location.href + '#step4'
+      redirectTo: getCleanCurrentUrl({ auth_flow: 'agendar' })
     }
   })
   if (error && errEl) {
@@ -1278,9 +1345,10 @@ async function loginEmailAgendar() {
     return
   }
 
+  saveBookingStateForAuth()
   const { error } = await sb.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: window.location.href }
+    options: { emailRedirectTo: getCleanCurrentUrl({ auth_flow: 'agendar' }) }
   })
 
   if (error) {
@@ -1303,9 +1371,10 @@ async function loginEmailAgendar4() {
     return
   }
 
+  saveBookingStateForAuth()
   const { error } = await sb.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: window.location.href }
+    options: { emailRedirectTo: getCleanCurrentUrl({ auth_flow: 'agendar' }) }
   })
 
   if (error) {
