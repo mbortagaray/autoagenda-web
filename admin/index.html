@@ -31,6 +31,30 @@
       <input class="form-input" type="password" id="loginSenha" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <button class="btn btn-primary" onclick="doLogin()">Entrar</button>
+    <button class="btn btn-ghost" style="width:100%;margin-top:10px" onclick="showForgotPassword()">Esqueci minha senha</button>
+  </div>
+</div>
+
+<!-- RESET SENHA -->
+<div id="resetPasswordScreen" class="login-screen" style="display:none">
+  <div class="login-card">
+    <div class="login-logo">AutoAgenda</div>
+    <div class="login-sub" id="resetPasswordSubtitle">Definir senha</div>
+    <div class="login-error" id="resetPasswordError"></div>
+    <div class="form-group" id="forgotEmailGroup" style="display:none">
+      <label class="form-label">Email</label>
+      <input class="form-input" type="email" id="forgotEmail" placeholder="admin@exemplo.com">
+    </div>
+    <div class="form-group" id="newPasswordGroup">
+      <label class="form-label">Nova senha</label>
+      <input class="form-input" type="password" id="newPassword" placeholder="Mínimo 6 caracteres">
+    </div>
+    <div class="form-group" id="newPasswordConfirmGroup">
+      <label class="form-label">Confirmar senha</label>
+      <input class="form-input" type="password" id="newPasswordConfirm" placeholder="Repita a senha">
+    </div>
+    <button class="btn btn-primary" id="btnResetPassword" onclick="saveNewPassword()">Salvar senha</button>
+    <button class="btn btn-ghost" style="width:100%;margin-top:10px" onclick="showLoginScreen()">Voltar</button>
   </div>
 </div>
 
@@ -426,6 +450,6 @@
 
 <script src="impersonation.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=13"></script>
+<script src="app.js?v=14"></script>
 </body>
 </html>

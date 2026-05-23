@@ -89,7 +89,94 @@ async function doLogout() {
   location.reload()
 }
 
+function hasRecoveryToken() {
+  const search = new URLSearchParams(window.location.search)
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+  return search.get('reset_password') === '1' || hash.get('type') === 'recovery' || hash.has('access_token')
+}
+
+function setResetMessage(message, isError = true) {
+  const el = document.getElementById('resetPasswordError')
+  el.textContent = message
+  el.className = isError ? 'login-error visible' : 'form-success'
+  el.style.display = 'block'
+}
+
+function showLoginScreen() {
+  document.getElementById('resetPasswordScreen').style.display = 'none'
+  document.getElementById('loginScreen').style.display = 'flex'
+}
+
+function showForgotPassword() {
+  document.getElementById('loginScreen').style.display = 'none'
+  document.getElementById('resetPasswordScreen').style.display = 'flex'
+  document.getElementById('resetPasswordSubtitle').textContent = 'Recuperar senha'
+  document.getElementById('forgotEmailGroup').style.display = 'block'
+  document.getElementById('newPasswordGroup').style.display = 'none'
+  document.getElementById('newPasswordConfirmGroup').style.display = 'none'
+  document.getElementById('btnResetPassword').textContent = 'Enviar email'
+  document.getElementById('btnResetPassword').onclick = sendPasswordReset
+  document.getElementById('resetPasswordError').style.display = 'none'
+}
+
+function showSetPassword() {
+  document.getElementById('loginScreen').style.display = 'none'
+  document.getElementById('resetPasswordScreen').style.display = 'flex'
+  document.getElementById('resetPasswordSubtitle').textContent = 'Definir senha'
+  document.getElementById('forgotEmailGroup').style.display = 'none'
+  document.getElementById('newPasswordGroup').style.display = 'block'
+  document.getElementById('newPasswordConfirmGroup').style.display = 'block'
+  document.getElementById('btnResetPassword').textContent = 'Salvar senha'
+  document.getElementById('btnResetPassword').onclick = saveNewPassword
+  document.getElementById('resetPasswordError').style.display = 'none'
+}
+
+async function sendPasswordReset() {
+  const email = document.getElementById('forgotEmail').value.trim()
+  if (!email || !email.includes('@')) {
+    setResetMessage('Digite um email válido')
+    return
+  }
+
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/superadmin?reset_password=1`
+  })
+  if (error) {
+    setResetMessage(error.message)
+    return
+  }
+  setResetMessage('Email enviado. Verifique sua caixa de entrada.', false)
+}
+
+async function saveNewPassword() {
+  const password = document.getElementById('newPassword').value
+  const confirm = document.getElementById('newPasswordConfirm').value
+  if (password.length < 6) {
+    setResetMessage('Senha deve ter no mínimo 6 caracteres')
+    return
+  }
+  if (password !== confirm) {
+    setResetMessage('Senhas não coincidem')
+    return
+  }
+
+  const { error } = await sb.auth.updateUser({ password })
+  if (error) {
+    setResetMessage(error.message)
+    return
+  }
+  await sb.auth.signOut()
+  window.history.replaceState({}, document.title, '/superadmin')
+  setResetMessage('Senha definida. Entre usando a nova senha.', false)
+  setTimeout(showLoginScreen, 1200)
+}
+
 async function checkSession() {
+  if (hasRecoveryToken()) {
+    await sb.auth.getSession()
+    showSetPassword()
+    return
+  }
   const { data: { session } } = await sb.auth.getSession()
   if (session) {
     const { data: adminUser } = await sb
@@ -611,6 +698,7 @@ async function toggleProf(id, ativo) {
 
 // ---- USUÁRIOS ----
 let usuariosAgrupados = []
+let editingUser = null
 
 async function loadUsuarios() {
   const { data } = await sb
@@ -663,10 +751,101 @@ function renderUsuarios(list) {
           <div class="table-name" style="margin-top:6px">${u.nome || '—'}</div>
           <div class="table-sub">${u.email || u.user_id}</div>
         </div>
-        ${negBtn}
+        <div class="table-actions user-actions">
+          ${negBtn}
+          <button class="btn btn-sm btn-ghost" onclick="openEditUsuario('${u.user_id}')">Editar</button>
+          <button class="btn btn-sm btn-ghost" onclick="sendPasswordLink('${u.user_id}')">Enviar senha</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteUsuario('${u.user_id}')">Remover</button>
+        </div>
       </div>
     `
   }).join('')
+}
+
+async function callAdminUserAction(payload) {
+  const { data: { session } } = await sb.auth.getSession()
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-user-action`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`
+    },
+    body: JSON.stringify(payload),
+  })
+  const result = await res.json().catch(() => ({}))
+  if (!res.ok || result.error) throw new Error(result.error || 'Erro ao processar usuário')
+  return result
+}
+
+function openEditUsuario(userId) {
+  const u = usuariosAgrupados.find(x => x.user_id === userId)
+  if (!u) return
+  editingUser = u
+  document.getElementById('editUNome').value = u.nome || ''
+  document.getElementById('editUEmail').value = u.email || ''
+  document.getElementById('editURole').value = u.role || 'admin'
+  document.getElementById('modalEditUsuarioError').style.display = 'none'
+  document.getElementById('modalEditUsuarioSuccess').style.display = 'none'
+  document.getElementById('btnEditUsuario').disabled = false
+  document.getElementById('btnEditUsuario').textContent = 'Salvar'
+  document.getElementById('modalEditUsuario').style.display = 'flex'
+}
+
+async function saveEditUsuario() {
+  const errEl = document.getElementById('modalEditUsuarioError')
+  const sucEl = document.getElementById('modalEditUsuarioSuccess')
+  const btn = document.getElementById('btnEditUsuario')
+  errEl.style.display = 'none'
+  sucEl.style.display = 'none'
+  if (!editingUser) return
+
+  const nome = document.getElementById('editUNome').value.trim()
+  const email = document.getElementById('editUEmail').value.trim()
+  const role = document.getElementById('editURole').value
+  if (!nome || !email) {
+    errEl.textContent = 'Nome e email são obrigatórios'
+    errEl.style.display = 'block'
+    return
+  }
+
+  btn.disabled = true
+  btn.textContent = 'Salvando...'
+  try {
+    await callAdminUserAction({ action: 'update', user_id: editingUser.user_id, nome, email, role })
+    sucEl.textContent = 'Usuário atualizado.'
+    sucEl.style.display = 'block'
+    await loadUsuarios()
+    setTimeout(() => closeModal('modalEditUsuario'), 900)
+  } catch (err) {
+    errEl.textContent = err.message
+    errEl.style.display = 'block'
+    btn.disabled = false
+    btn.textContent = 'Salvar'
+  }
+}
+
+async function sendPasswordLink(userId) {
+  const u = usuariosAgrupados.find(x => x.user_id === userId)
+  if (!u) return
+  if (!confirm(`Enviar email para definir/redefinir senha de ${u.email || u.nome}?`)) return
+  try {
+    await callAdminUserAction({ action: 'send_password', user_id: userId })
+    alert('Email enviado.')
+  } catch (err) {
+    alert('Erro: ' + err.message)
+  }
+}
+
+async function deleteUsuario(userId) {
+  const u = usuariosAgrupados.find(x => x.user_id === userId)
+  if (!u) return
+  if (!confirm(`Remover o usuário ${u.email || u.nome}? Esta ação remove o acesso ao sistema.`)) return
+  try {
+    await callAdminUserAction({ action: 'delete', user_id: userId })
+    await loadUsuarios()
+  } catch (err) {
+    alert('Erro: ' + err.message)
+  }
 }
 
 // ---- DRAWER NEGÓCIOS DO USUÁRIO ----
@@ -776,13 +955,11 @@ function onRoleChange() {
 async function showUsuarioForm() {
   document.getElementById('uNome').value = ''
   document.getElementById('uEmail').value = ''
-  document.getElementById('uSenha').value = ''
-  document.getElementById('uSenhaConfirm').value = ''
   document.getElementById('uRole').value = 'admin'
   document.getElementById('modalUsuarioError').style.display = 'none'
   document.getElementById('modalUsuarioSuccess').style.display = 'none'
   document.getElementById('btnSaveUsuario').disabled = false
-  document.getElementById('btnSaveUsuario').textContent = 'Criar usuário'
+  document.getElementById('btnSaveUsuario').textContent = 'Criar e enviar acesso'
   const sel = document.getElementById('uNegocio')
   sel.innerHTML = negocios.map(n => `<option value="${n.id}">${n.nome}</option>`).join('')
   onRoleChange()
@@ -798,19 +975,15 @@ async function saveUsuario() {
 
   const nome = document.getElementById('uNome').value.trim()
   const email = document.getElementById('uEmail').value.trim()
-  const senha = document.getElementById('uSenha').value
-  const senhaConfirm = document.getElementById('uSenhaConfirm').value
   const negocioId = document.getElementById('uNegocio').value
   const role = document.getElementById('uRole').value
 
   if (!nome) { errEl.textContent = 'Nome é obrigatório'; errEl.style.display = 'block'; return }
-  if (!email || !senha) { errEl.textContent = 'Email e senha são obrigatórios'; errEl.style.display = 'block'; return }
-  if (senha.length < 6) { errEl.textContent = 'Senha deve ter no mínimo 6 caracteres'; errEl.style.display = 'block'; return }
-  if (senha !== senhaConfirm) { errEl.textContent = 'Senhas não coincidem'; errEl.style.display = 'block'; return }
+  if (!email) { errEl.textContent = 'Email é obrigatório'; errEl.style.display = 'block'; return }
   if (role === 'owner' && !negocioId) { errEl.textContent = 'Selecione um negócio'; errEl.style.display = 'block'; return }
 
   btn.disabled = true
-  btn.textContent = 'Criando...'
+  btn.textContent = 'Enviando...'
 
   const { data: { session } } = await sb.auth.getSession()
   const res = await fetch(`${SUPABASE_URL}/functions/v1/criar-admin-user`, {
@@ -819,7 +992,7 @@ async function saveUsuario() {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${session.access_token}`
     },
-    body: JSON.stringify({ nome, email, senha, negocio_id: (role === 'admin' || role === 'superadmin') ? null : (negocioId || null), role }),
+    body: JSON.stringify({ nome, email, negocio_id: (role === 'admin' || role === 'superadmin') ? null : (negocioId || null), role }),
   })
   const result = await res.json()
 
@@ -827,11 +1000,11 @@ async function saveUsuario() {
     errEl.textContent = mapAuthError(result.error)
     errEl.style.display = 'block'
     btn.disabled = false
-    btn.textContent = 'Criar usuário'
+    btn.textContent = 'Criar e enviar acesso'
     return
   }
 
-  sucEl.textContent = `Usuário ${email} criado com sucesso!`
+  sucEl.textContent = `Usuário ${email} criado. Email de acesso enviado.`
   sucEl.style.display = 'block'
   btn.textContent = 'Criado ✓'
   await loadUsuarios()

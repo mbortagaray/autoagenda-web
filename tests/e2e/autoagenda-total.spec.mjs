@@ -106,6 +106,16 @@ test.describe('AutoAgenda E2E publico', () => {
 })
 
 test.describe('AutoAgenda E2E admin tenant', () => {
+  test('login admin mostra recuperacao de senha', async ({ page }) => {
+    await page.goto('/admin')
+    await page.getByRole('button', { name: 'Esqueci minha senha' }).click()
+    await expect(page.getByText('Recuperar senha')).toBeVisible()
+    await expect(page.locator('#forgotEmail')).toBeVisible()
+    await expect(page.locator('#newPassword')).toBeHidden()
+  })
+})
+
+test.describe('AutoAgenda E2E admin tenant autenticado', () => {
   test.beforeEach(() => requireCredentials(adminEmail, adminPassword, 'E2E_ADMIN'))
 
   test('admin entra e navega pelas areas principais sem gravar dados', async ({ page }) => {
@@ -141,6 +151,16 @@ test.describe('AutoAgenda E2E admin tenant', () => {
 })
 
 test.describe('AutoAgenda E2E superadmin', () => {
+  test('login superadmin mostra recuperacao de senha', async ({ page }) => {
+    await page.goto('/superadmin')
+    await page.getByRole('button', { name: 'Esqueci minha senha' }).click()
+    await expect(page.getByText('Recuperar senha')).toBeVisible()
+    await expect(page.locator('#forgotEmail')).toBeVisible()
+    await expect(page.locator('#newPassword')).toBeHidden()
+  })
+})
+
+test.describe('AutoAgenda E2E superadmin autenticado', () => {
   test.beforeEach(() => requireCredentials(superEmail, superPassword, 'E2E_SUPERADMIN'))
 
   test('superadmin entra e valida negocios, usuarios e modais principais', async ({ page }) => {
@@ -161,6 +181,8 @@ test.describe('AutoAgenda E2E superadmin', () => {
     await expect(page.locator('#usuariosContent')).toBeVisible()
     await page.getByRole('button', { name: '+ Novo usuário' }).click()
     await expect(page.locator('#uEmail')).toBeVisible()
+    await expect(page.locator('#uSenha')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Criar e enviar acesso' })).toBeVisible()
     await closeModalById(page, 'modalUsuario')
   })
 

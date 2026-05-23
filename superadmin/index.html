@@ -25,6 +25,30 @@
       <input class="form-input" type="password" id="loginSenha" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <button class="btn btn-primary" onclick="doLogin()">Entrar</button>
+    <button class="btn btn-ghost" style="width:100%;margin-top:10px" onclick="showForgotPassword()">Esqueci minha senha</button>
+  </div>
+</div>
+
+<!-- RESET SENHA -->
+<div id="resetPasswordScreen" class="login-screen" style="display:none">
+  <div class="login-card">
+    <div class="login-logo">AutoAgenda</div>
+    <div class="login-sub" id="resetPasswordSubtitle">Definir senha</div>
+    <div class="login-error" id="resetPasswordError"></div>
+    <div class="form-group" id="forgotEmailGroup" style="display:none">
+      <label class="form-label">Email</label>
+      <input class="form-input" type="email" id="forgotEmail" placeholder="admin@exemplo.com">
+    </div>
+    <div class="form-group" id="newPasswordGroup">
+      <label class="form-label">Nova senha</label>
+      <input class="form-input" type="password" id="newPassword" placeholder="Mínimo 6 caracteres">
+    </div>
+    <div class="form-group" id="newPasswordConfirmGroup">
+      <label class="form-label">Confirmar senha</label>
+      <input class="form-input" type="password" id="newPasswordConfirm" placeholder="Repita a senha">
+    </div>
+    <button class="btn btn-primary" id="btnResetPassword" onclick="saveNewPassword()">Salvar senha</button>
+    <button class="btn btn-ghost" style="width:100%;margin-top:10px" onclick="showLoginScreen()">Voltar</button>
   </div>
 </div>
 
@@ -269,14 +293,6 @@
       <input class="form-input" type="email" id="uEmail" placeholder="admin@negocio.com">
     </div>
     <div class="form-group">
-      <label class="form-label">Senha inicial</label>
-      <input class="form-input" type="password" id="uSenha" placeholder="Mínimo 6 caracteres">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Confirmar senha</label>
-      <input class="form-input" type="password" id="uSenhaConfirm" placeholder="Repita a senha">
-    </div>
-    <div class="form-group">
       <label class="form-label">Papel</label>
       <select class="form-input" id="uRole" onchange="onRoleChange()">
         <option value="superadmin">Super Admin</option>
@@ -288,11 +304,43 @@
       <label class="form-label">Negócio</label>
       <select class="form-input" id="uNegocio"></select>
     </div>
+    <p style="font-size:13px;color:var(--text-muted);line-height:1.45;margin-bottom:12px">
+      O usuário receberá um email para definir a própria senha.
+    </p>
     <div id="modalUsuarioError" class="form-error" style="display:none"></div>
     <div id="modalUsuarioSuccess" class="form-success" style="display:none"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modalUsuario')">Fechar</button>
-      <button class="btn btn-primary" id="btnSaveUsuario" onclick="saveUsuario()">Criar usuário</button>
+      <button class="btn btn-primary" id="btnSaveUsuario" onclick="saveUsuario()">Criar e enviar acesso</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR USUÁRIO -->
+<div class="modal-overlay" id="modalEditUsuario" style="display:none">
+  <div class="modal">
+    <div class="modal-title">Editar usuário</div>
+    <div class="form-group">
+      <label class="form-label">Nome completo</label>
+      <input class="form-input" type="text" id="editUNome">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" type="email" id="editUEmail">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Papel</label>
+      <select class="form-input" id="editURole">
+        <option value="superadmin">Super Admin</option>
+        <option value="admin">Admin (Vendedor)</option>
+        <option value="owner">Owner (dono de um negócio)</option>
+      </select>
+    </div>
+    <div id="modalEditUsuarioError" class="form-error" style="display:none"></div>
+    <div id="modalEditUsuarioSuccess" class="form-success" style="display:none"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalEditUsuario')">Fechar</button>
+      <button class="btn btn-primary" id="btnEditUsuario" onclick="saveEditUsuario()">Salvar</button>
     </div>
   </div>
 </div>
@@ -340,6 +388,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/superadmin/app.js?v=17"></script>
+<script src="/superadmin/app.js?v=18"></script>
 </body>
 </html>

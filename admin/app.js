@@ -73,7 +73,94 @@ async function doLogout() {
   location.reload()
 }
 
+function hasRecoveryToken() {
+  const search = new URLSearchParams(window.location.search)
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+  return search.get('reset_password') === '1' || hash.get('type') === 'recovery' || hash.has('access_token')
+}
+
+function setResetMessage(message, isError = true) {
+  const el = document.getElementById('resetPasswordError')
+  el.textContent = message
+  el.className = isError ? 'login-error visible' : 'form-success'
+  el.style.display = 'block'
+}
+
+function showLoginScreen() {
+  document.getElementById('resetPasswordScreen').style.display = 'none'
+  document.getElementById('loginScreen').style.display = 'flex'
+}
+
+function showForgotPassword() {
+  document.getElementById('loginScreen').style.display = 'none'
+  document.getElementById('resetPasswordScreen').style.display = 'flex'
+  document.getElementById('resetPasswordSubtitle').textContent = 'Recuperar senha'
+  document.getElementById('forgotEmailGroup').style.display = 'block'
+  document.getElementById('newPasswordGroup').style.display = 'none'
+  document.getElementById('newPasswordConfirmGroup').style.display = 'none'
+  document.getElementById('btnResetPassword').textContent = 'Enviar email'
+  document.getElementById('btnResetPassword').onclick = sendPasswordReset
+  document.getElementById('resetPasswordError').style.display = 'none'
+}
+
+function showSetPassword() {
+  document.getElementById('loginScreen').style.display = 'none'
+  document.getElementById('resetPasswordScreen').style.display = 'flex'
+  document.getElementById('resetPasswordSubtitle').textContent = 'Definir senha'
+  document.getElementById('forgotEmailGroup').style.display = 'none'
+  document.getElementById('newPasswordGroup').style.display = 'block'
+  document.getElementById('newPasswordConfirmGroup').style.display = 'block'
+  document.getElementById('btnResetPassword').textContent = 'Salvar senha'
+  document.getElementById('btnResetPassword').onclick = saveNewPassword
+  document.getElementById('resetPasswordError').style.display = 'none'
+}
+
+async function sendPasswordReset() {
+  const email = document.getElementById('forgotEmail').value.trim()
+  if (!email || !email.includes('@')) {
+    setResetMessage('Digite um email válido')
+    return
+  }
+
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/admin?reset_password=1`
+  })
+  if (error) {
+    setResetMessage(error.message)
+    return
+  }
+  setResetMessage('Email enviado. Verifique sua caixa de entrada.', false)
+}
+
+async function saveNewPassword() {
+  const password = document.getElementById('newPassword').value
+  const confirm = document.getElementById('newPasswordConfirm').value
+  if (password.length < 6) {
+    setResetMessage('Senha deve ter no mínimo 6 caracteres')
+    return
+  }
+  if (password !== confirm) {
+    setResetMessage('Senhas não coincidem')
+    return
+  }
+
+  const { error } = await sb.auth.updateUser({ password })
+  if (error) {
+    setResetMessage(error.message)
+    return
+  }
+  await sb.auth.signOut()
+  window.history.replaceState({}, document.title, '/admin')
+  setResetMessage('Senha definida. Entre usando a nova senha.', false)
+  setTimeout(showLoginScreen, 1200)
+}
+
 async function checkAuth() {
+  if (hasRecoveryToken()) {
+    await sb.auth.getSession()
+    showSetPassword()
+    return
+  }
   const { data: { session } } = await sb.auth.getSession()
   if (session) {
     await initAdmin()
