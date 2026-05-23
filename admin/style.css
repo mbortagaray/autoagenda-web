@@ -117,11 +117,13 @@ body.is-impersonating .content { padding-top: 70px; }
   padding: 10px 20px; border-radius: 8px; border: none;
   font-family: inherit; font-size: 14px; font-weight: 500;
   cursor: pointer; transition: all 0.2s;
+  display: inline-flex; align-items: center; justify-content: center;
+  text-decoration: none;
 }
 .btn-primary { background: var(--primary); color: white; }
 .btn-primary:hover { background: var(--primary-light); }
-.btn-ghost { background: transparent; color: var(--text-muted); }
-.btn-ghost:hover { color: var(--text); }
+.btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+.btn-ghost:hover { color: var(--text); background: var(--bg); }
 .btn-sm { padding: 6px 14px; font-size: 13px; }
 .btn-icon {
   background: var(--white); border: 1px solid var(--border);
@@ -131,6 +133,8 @@ body.is-impersonating .content { padding-top: 70px; }
 .btn-icon:hover { background: var(--bg); }
 .btn-danger { background: var(--danger); color: white; }
 .btn-danger:hover { opacity: 0.9; }
+.btn-accent { background: #1a73e8; color: white; border: none; }
+.btn-accent:hover { background: #1557b0; }
 
 /* LAYOUT */
 .sidebar {
@@ -298,27 +302,53 @@ body.is-impersonating .content { padding-top: 70px; }
 .table-row {
   display: flex; align-items: center; padding: 14px 16px;
   border-bottom: 1px solid var(--border); gap: 12px;
+  background: var(--white);
 }
-.table-row:last-child { border-bottom: none; }
+.table-row:first-child { border-radius: var(--radius) var(--radius) 0 0; }
+.table-row:last-child { border-bottom: none; border-radius: 0 0 var(--radius) var(--radius); }
+.table-row:only-child { border-radius: var(--radius); }
 .table-row:hover { background: var(--bg); }
-.table-main { flex: 1; }
+.table-main { flex: 1; min-width: 0; }
 .table-name { font-weight: 500; font-size: 14px; }
-.table-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+.table-sub {
+  font-size: 12px; color: var(--text-muted); margin-top: 4px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
 .table-badge {
   padding: 3px 10px; border-radius: 20px; font-size: 11px;
   font-weight: 600; background: #e8f0fe; color: var(--primary);
+}
+.slug-chip {
+  background: #f0f0f5; color: var(--text-muted);
+  padding: 2px 8px; border-radius: 4px; font-size: 11px;
+  font-family: monospace;
 }
 .role-chip {
   padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600;
   text-transform: uppercase; letter-spacing: 0.3px;
 }
 .role-owner { background: #e8f0fe; color: #1a73e8; }
-.table-actions { display: flex; gap: 6px; }
+.status-badge {
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+}
+.status-badge.active { background: #e8f5e9; color: #2e7d32; }
+.status-badge.inactive { background: #f0f0f5; color: #5f6473; }
+.table-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
 .table-actions button {
   padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border);
   background: white; font-size: 12px; cursor: pointer; transition: all 0.2s;
 }
 .table-actions button:hover { background: var(--bg); }
+.table-actions .btn { font-size: 13px; }
+.table-actions .btn-ghost { background: transparent; color: var(--text-muted); }
+.table-actions .btn-ghost:hover { color: var(--text); background: var(--bg); }
+.table-actions .btn-accent { background: #1a73e8; color: white; border: none; }
+.table-actions .btn-accent:hover { background: #1557b0; }
+.table-actions .btn-danger { background: var(--danger); color: white; border: none; }
+.table-actions .btn-danger:hover { opacity: 0.9; background: var(--danger); }
+.table-actions .btn-primary { background: var(--primary); color: white; border: none; }
+.table-actions .btn-primary:hover { background: var(--primary-light); }
 
 /* MODALS */
 .modal-overlay {
@@ -377,9 +407,22 @@ body.is-impersonating .content { padding-top: 70px; }
 .search-bar { margin-bottom: 16px; }
 .negocios-toolbar {
   display: grid;
-  grid-template-columns: minmax(220px, 420px);
+  grid-template-columns: 1fr 150px;
   gap: 12px;
   margin-bottom: 16px;
+}
+.table-row.negocio-row {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 74px 360px;
+  align-items: center;
+  gap: 14px;
+}
+.table-row.negocio-row .status-badge { justify-self: start; }
+.negocios-note {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+  margin-top: 16px;
 }
 
 /* CONFIG */
@@ -447,5 +490,22 @@ body.is-impersonating .content { padding-top: 70px; }
 [data-theme="dark"] .role-owner { background: #1a2a4e; color: #70a8ff; }
 [data-theme="dark"] .status-confirmado { background: #1a3a20; color: #5cbb6a; }
 [data-theme="dark"] .status-cancelado { background: #3a1a20; color: #ff7070; }
+[data-theme="dark"] .slug-chip { background: #252538; color: var(--text-muted); }
+[data-theme="dark"] .status-badge.active { background: #1a3a20; color: #5cbb6a; }
+[data-theme="dark"] .status-badge.inactive { background: #252538; color: #9090aa; }
+[data-theme="dark"] .table-actions .btn-ghost { background: transparent; color: var(--text-muted); }
+[data-theme="dark"] .table-actions .btn-ghost:hover { color: var(--text); background: var(--bg); }
+[data-theme="dark"] .table-actions .btn-accent { background: #1a73e8; color: white; border: none; }
+[data-theme="dark"] .table-actions .btn-accent:hover { background: #1557b0; }
+[data-theme="dark"] .table-actions .btn-danger { background: var(--danger); color: white; border: none; }
+[data-theme="dark"] .table-actions .btn-danger:hover { opacity: 0.9; background: var(--danger); }
+[data-theme="dark"] .table-actions .btn-primary { background: var(--primary); color: white; border: none; }
+[data-theme="dark"] .table-actions .btn-primary:hover { background: var(--primary-light); }
 [data-theme="dark"] .checkbox-item { background: var(--white); }
 [data-theme="dark"] .checkbox-item.checked { background: var(--primary-light); border-color: var(--primary-light); }
+
+@media (max-width: 768px) {
+  .negocios-toolbar { grid-template-columns: 1fr; }
+  .table-row.negocio-row { grid-template-columns: 1fr; align-items: flex-start; }
+  .table-row.negocio-row .table-actions { justify-content: flex-start; flex-wrap: wrap; }
+}

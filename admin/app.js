@@ -45,6 +45,13 @@ function formatPhone(value) {
   return formatPhoneDigits(normalizePhone(value))
 }
 
+function formatDateBR(dateStr) {
+  if (!dateStr) return ''
+  const dt = new Date(dateStr)
+  if (Number.isNaN(dt.getTime())) return ''
+  return dt.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+}
+
 function maskPhoneInput(input) {
   input.value = formatPhoneDigits(getPhoneDigits(input.value))
 }
@@ -175,7 +182,7 @@ async function initAdmin() {
   const { data: { user } } = await sb.auth.getUser()
   const { data: rows } = await sb
     .from('admin_users')
-    .select('negocio_id, role, negocios(id, nome)')
+    .select('negocio_id, role, negocios(id, nome, slug, cidade, telefone, created_at, ativo)')
     .eq('user_id', user.id)
     .not('negocio_id', 'is', null)
 
@@ -280,25 +287,63 @@ function renderAdminNegocios(rows) {
     return
   }
 
-  container.innerHTML = '<div class="table-card">' + rows.map(r => `
+  container.innerHTML = '<div class="table-card">' + rows.map(r => {
+    const n = r.negocios || {}
+    const isActive = n.ativo !== false
+    return `
     <div class="table-row negocio-row">
       <div class="table-main">
-        <div class="table-name">${r.negocios?.nome || r.negocio_id}</div>
-        <div class="table-sub">${r.role === 'admin' ? 'Admin' : 'Owner'}</div>
+        <div class="table-name">${n.nome || r.negocio_id}</div>
+        <div class="table-sub">
+          ${n.slug ? `<span class="slug-chip">/${n.slug}</span>` : ''}
+          ${n.cidade ? `<span>${n.cidade}</span>` : ''}
+          ${n.telefone ? `<span>${formatPhone(n.telefone)}</span>` : ''}
+          ${n.created_at ? `<span>Criado em ${formatDateBR(n.created_at)}</span>` : ''}
+        </div>
       </div>
+      <span class="status-badge ${isActive ? 'active' : 'inactive'}">${isActive ? 'Ativo' : 'Inativo'}</span>
       <div class="table-actions">
-        <button onclick="${r.role === 'admin' ? 'entrarComoTenant' : 'enterNegocio'}('${r.negocio_id}')">Entrar</button>
+        <button class="btn btn-sm btn-ghost" onclick="gerenciarProfissionaisAdmin('${r.negocio_id}')">Profissionais</button>
+        <button class="btn btn-sm btn-accent" onclick="${r.role === 'admin' ? 'entrarComoTenant' : 'enterNegocio'}('${r.negocio_id}')">⚡ Entrar como admin</button>
+        <button class="btn btn-sm ${isActive ? 'btn-danger' : 'btn-primary'}" onclick="toggleAdminNegocio('${r.negocio_id}', ${isActive})">
+          ${isActive ? 'Desativar' : 'Ativar'}
+        </button>
+        ${n.slug ? `<a class="btn btn-sm btn-ghost" href="https://agenda.mdinamic.com.br/${n.slug}" target="_blank">↗ Ver</a>` : ''}
       </div>
     </div>
-  `).join('') + '</div>'
+  `}).join('') + '</div>'
 }
 
 function filterAdminNegocios() {
   const q = document.getElementById('adminNegocioSearch').value.toLowerCase().trim()
-  const filtered = q
-    ? adminNegocioRows.filter(r => (r.negocios?.nome || '').toLowerCase().includes(q))
-    : adminNegocioRows
+  const status = document.getElementById('adminNegocioStatusFilter')?.value || 'todos'
+  const filtered = adminNegocioRows.filter(r => {
+    const n = r.negocios || {}
+    const matchesSearch = !q
+      || (n.nome || '').toLowerCase().includes(q)
+      || (n.slug || '').toLowerCase().includes(q)
+      || (n.cidade || '').toLowerCase().includes(q)
+    const isActive = n.ativo !== false
+    const matchesStatus = status === 'todos'
+      || (status === 'ativos' && isActive)
+      || (status === 'inativos' && !isActive)
+    return matchesSearch && matchesStatus
+  })
   renderAdminNegocios(filtered)
+}
+
+async function toggleAdminNegocio(id, ativo) {
+  const acao = ativo ? 'desativar' : 'ativar'
+  if (!confirm(`Deseja ${acao} este negócio?`)) return
+  await sb.from('negocios').update({ ativo: !ativo }).eq('id', id)
+  const row = adminNegocioRows.find(r => r.negocio_id === id)
+  if (row?.negocios) row.negocios.ativo = !ativo
+  filterAdminNegocios()
+}
+
+async function gerenciarProfissionaisAdmin(id) {
+  await enterNegocio(id)
+  switchTab('profissionais')
 }
 
 async function entrarComoTenant(id) {
