@@ -342,8 +342,15 @@ async function toggleAdminNegocio(id, ativo) {
 }
 
 async function gerenciarProfissionaisAdmin(id) {
-  await enterNegocio(id)
+  adminDashboardMode = true
+  negocioId = id
+  const adminRow = adminNegocioRows.find(r => r.negocio_id === id)
+  currentAdminRole = adminRow?.role || null
+  negocio = adminRow?.negocios || null
   switchTab('profissionais')
+  document.getElementById('profissionaisContent').innerHTML = '<div class="agenda-empty">Carregando...</div>'
+  await loadServicos()
+  await loadProfissionais()
 }
 
 async function entrarComoTenant(id) {
