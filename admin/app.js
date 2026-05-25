@@ -836,6 +836,44 @@ async function uploadFoto(profId) {
   return data.publicUrl + '?t=' + Date.now()
 }
 
+function previewConfigLogo(input) {
+  const file = input.files[0]
+  if (!file) return
+  const preview = document.getElementById('cfgLogoPreview')
+  preview.src = URL.createObjectURL(file)
+  preview.style.display = 'block'
+  document.getElementById('cfgLogoName').textContent = file.name
+}
+
+function removeConfigLogo() {
+  document.getElementById('cfgLogoFile').value = ''
+  document.getElementById('cfgLogoUrl').value = ''
+  document.getElementById('cfgLogoPreview').style.display = 'none'
+  document.getElementById('cfgLogoPreview').src = ''
+  document.getElementById('cfgLogoName').textContent = 'Logo removido. Salve as configurações para aplicar.'
+}
+
+async function uploadConfigLogo() {
+  const fileInput = document.getElementById('cfgLogoFile')
+  const file = fileInput.files[0]
+  if (!file) return document.getElementById('cfgLogoUrl').value || null
+
+  const ext = file.name.split('.').pop()
+  const path = `negocios/${negocioId}/logo.${ext}`
+  const { error } = await sb.storage.from('fotos').upload(path, file, {
+    upsert: true,
+    contentType: file.type,
+  })
+
+  if (error) {
+    console.error('Logo upload error:', error)
+    return document.getElementById('cfgLogoUrl').value || null
+  }
+
+  const { data } = sb.storage.from('fotos').getPublicUrl(path)
+  return data.publicUrl + '?t=' + Date.now()
+}
+
 async function saveProf() {
   const modalError = document.getElementById('modalProfError')
   if (modalError) modalError.style.display = 'none'
@@ -1463,10 +1501,24 @@ function loadConfig() {
   document.getElementById('cfgCorPrimaria').value = negocio.cor_primaria || '#3D2B1F'
   document.getElementById('cfgCorSecundaria').value = negocio.cor_secundaria || '#C4947A'
   document.getElementById('cfgCorFundo').value = negocio.cor_fundo || '#F9F5F0'
+  document.getElementById('cfgLogoUrl').value = negocio.logo_url || ''
+  document.getElementById('cfgLogoFile').value = ''
+  const logoPreview = document.getElementById('cfgLogoPreview')
+  const logoName = document.getElementById('cfgLogoName')
+  if (negocio.logo_url) {
+    logoPreview.src = negocio.logo_url
+    logoPreview.style.display = 'block'
+    logoName.textContent = 'Logo atual do negócio.'
+  } else {
+    logoPreview.src = ''
+    logoPreview.style.display = 'none'
+    logoName.textContent = 'PNG, JPG ou WebP. Aparece no topo do site público.'
+  }
   document.getElementById('cfgJanela').value = negocio.janela_cancelamento_horas || 24
 }
 
 async function saveConfig() {
+  const logoUrl = await uploadConfigLogo()
   const obj = {
     nome: document.getElementById('cfgNome').value,
     telefone: normalizePhone(document.getElementById('cfgTel').value) || null,
@@ -1476,6 +1528,7 @@ async function saveConfig() {
     email_remetente: document.getElementById('cfgEmailRemetente').value.trim() || null,
     email_remetente_nome: document.getElementById('cfgEmailRemetenteNome').value.trim() || null,
     email_notificacoes_ativas: document.getElementById('cfgEmailNotificacoes').value === 'true',
+    logo_url: logoUrl,
     cor_primaria: document.getElementById('cfgCorPrimaria').value,
     cor_secundaria: document.getElementById('cfgCorSecundaria').value,
     cor_fundo: document.getElementById('cfgCorFundo').value,
@@ -1490,6 +1543,13 @@ async function saveConfig() {
     feedback.innerHTML = '<span style="color:#34c759">Salvo com sucesso!</span>'
     negocio = { ...negocio, ...obj }
     document.getElementById('sidebarNegocio').textContent = obj.nome
+    document.getElementById('cfgLogoUrl').value = logoUrl || ''
+    document.getElementById('cfgLogoFile').value = ''
+    if (logoUrl) {
+      document.getElementById('cfgLogoPreview').src = logoUrl
+      document.getElementById('cfgLogoPreview').style.display = 'block'
+      document.getElementById('cfgLogoName').textContent = 'Logo atual do negócio.'
+    }
   }
   setTimeout(() => feedback.innerHTML = '', 3000)
 }

@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mockup - Identidade visual do tenant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --page: #101016;
+      --panel: #1a1a27;
+      --panel-2: #222234;
+      --line: #303048;
+      --text: #f4f1ea;
+      --muted: #a8a3b8;
+      --primary: #7b3ff2;
+      --primary-text: #ffffff;
+      --accent: #f2b84b;
+      --tenant-bg: #f8f1e8;
+      --tenant-surface: #fffaf4;
+      --tenant-text: #281d18;
+      --tenant-muted: #826f63;
+      --tenant-primary: #4a2f24;
+      --tenant-primary-text: #fff8ef;
+      --tenant-accent: #c88f67;
+      --tenant-border: #eadccc;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--text);
+      font-family: "DM Sans", system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    aside {
+      border-right: 1px solid var(--line);
+      background: #151520;
+      padding: 24px;
+    }
+
+    main { padding: 24px; }
+
+    .brand {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      margin-bottom: 24px;
+    }
+
+    .section {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .presets {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .preset {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 10px;
+      cursor: pointer;
+      text-align: left;
+      font: inherit;
+    }
+
+    .preset.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(242, 184, 75, .15);
+    }
+
+    .preset span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 3px;
+    }
+
+    .swatches {
+      display: flex;
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    .swatch {
+      width: 22px;
+      height: 18px;
+      border-radius: 5px;
+      border: 1px solid rgba(255,255,255,.18);
+    }
+
+    .field {
+      display: grid;
+      grid-template-columns: 1fr 46px;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input[type="color"] {
+      width: 46px;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 3px;
+      background: var(--panel-2);
+      cursor: pointer;
+    }
+
+    .logo-drop {
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 12px;
+      align-items: center;
+      border: 1px dashed #494965;
+      background: var(--panel-2);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .logo-thumb {
+      width: 58px;
+      height: 58px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--tenant-primary), var(--tenant-accent));
+      color: var(--tenant-primary-text);
+      font-family: "Cormorant Garamond", serif;
+      font-size: 24px;
+      font-weight: 600;
+      overflow: hidden;
+    }
+
+    .logo-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .logo-drop input { display: none; }
+    .logo-drop strong { display: block; font-size: 14px; margin-bottom: 3px; }
+    .logo-drop span { color: var(--muted); font-size: 12px; line-height: 1.35; }
+
+    .select-field {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 9px 10px;
+      font: inherit;
+    }
+
+    .field.wide {
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+
+    .toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .toggle button {
+      border: 0;
+      background: var(--panel-2);
+      color: var(--muted);
+      padding: 10px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .toggle button.active {
+      background: var(--primary);
+      color: var(--primary-text);
+    }
+
+    .contrast {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 10px;
+    }
+
+    .pill {
+      border-radius: 999px;
+      padding: 4px 9px;
+      background: #14381d;
+      color: #77d98a;
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin: 0;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--text);
+      padding: 10px 14px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--primary-text);
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: minmax(280px, 420px) minmax(280px, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .phone {
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      padding: 12px;
+      background: #08080c;
+      box-shadow: 0 20px 70px rgba(0,0,0,.28);
+    }
+
+    .tenant {
+      overflow: hidden;
+      border-radius: 20px;
+      min-height: 680px;
+      background: var(--tenant-bg);
+      color: var(--tenant-text);
+    }
+
+    .tenant-header {
+      background: var(--tenant-primary);
+      color: var(--tenant-primary-text);
+      padding: 22px 24px 14px;
+      text-align: center;
+    }
+
+    .tenant-brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      min-height: 48px;
+    }
+
+    .tenant-logo-img {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid color-mix(in srgb, var(--tenant-primary-text) 68%, transparent);
+      display: none;
+    }
+
+    .tenant-logo-img.square {
+      border-radius: 14px;
+    }
+
+    .tenant-logo-img.sm { width: 38px; height: 38px; }
+    .tenant-logo-img.lg { width: 58px; height: 58px; }
+
+    .tenant-logo-text {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 26px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    .tenant-logo-text.sm { font-size: 22px; }
+    .tenant-logo-text.lg { font-size: 30px; }
+
+    .tenant-info {
+      background: var(--tenant-primary);
+      color: color-mix(in srgb, var(--tenant-primary-text) 72%, var(--tenant-accent));
+      padding: 0 24px 18px;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .steps {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px;
+      background: var(--tenant-surface);
+      border-bottom: 1px solid var(--tenant-border);
+    }
+
+    .step {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: var(--tenant-bg);
+      color: var(--tenant-muted);
+      border: 2px solid var(--tenant-border);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .step.active {
+      background: var(--tenant-primary);
+      color: var(--tenant-primary-text);
+      border-color: var(--tenant-primary);
+    }
+
+    .tenant-body {
+      padding: 20px;
+    }
+
+    .tenant h2 {
+      font-size: 22px;
+      margin: 0 0 6px;
+    }
+
+    .tenant p {
+      color: var(--tenant-muted);
+      margin: 0 0 18px;
+      line-height: 1.45;
+      font-size: 14px;
+    }
+
+    .service-card {
+      border: 1px solid var(--tenant-border);
+      background: var(--tenant-surface);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .service-card strong { display: block; margin-bottom: 3px; }
+    .service-card span { color: var(--tenant-muted); font-size: 13px; }
+
+    .price {
+      color: var(--tenant-primary);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .slots {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 18px 0;
+    }
+
+    .slot {
+      border: 1px solid var(--tenant-border);
+      color: var(--tenant-primary);
+      background: var(--tenant-surface);
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .tenant-cta {
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      background: var(--tenant-accent);
+      color: var(--tenant-primary-text);
+      padding: 14px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .tokens {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      overflow: hidden;
+    }
+
+    .token-row {
+      display: grid;
+      grid-template-columns: 150px 1fr 48px;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+    }
+
+    .token-row:last-child { border-bottom: 0; }
+    .token-row code { color: var(--accent); }
+    .token-row span { color: var(--muted); }
+
+    .mini-swatch {
+      height: 28px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.14);
+    }
+
+    @media (max-width: 1180px) {
+      .preview-grid { grid-template-columns: minmax(280px, 420px); }
+    }
+
+    @media (max-width: 980px) {
+      .app { grid-template-columns: 1fr; }
+      aside { border-right: 0; border-bottom: 1px solid var(--line); }
+      .preview-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand">Identidade visual</div>
+      <div class="sub">Mockup de como o tenant escolheria paleta, modo e preview antes de salvar.</div>
+
+      <div class="section">
+        <div class="section-title">Temas prontos</div>
+        <div class="presets">
+          <button class="preset active" data-preset="bella">
+            Beauty quente
+            <span>Atual, salão, estética</span>
+            <div class="swatches"><i class="swatch" style="background:#4a2f24"></i><i class="swatch" style="background:#c88f67"></i><i class="swatch" style="background:#f8f1e8"></i></div>
+          </button>
+          <button class="preset" data-preset="clinic">
+            Clínica clean
+            <span>Saúde, consultório</span>
+            <div class="swatches"><i class="swatch" style="background:#175c62"></i><i class="swatch" style="background:#69b7a8"></i><i class="swatch" style="background:#eef8f6"></i></div>
+          </button>
+          <button class="preset" data-preset="luxury">
+            Luxo escuro
+            <span>Premium, autoral</span>
+            <div class="swatches"><i class="swatch" style="background:#111014"></i><i class="swatch" style="background:#d4af37"></i><i class="swatch" style="background:#18171d"></i></div>
+          </button>
+          <button class="preset" data-preset="fresh">
+            Fresh claro
+            <span>Leve, jovem</span>
+            <div class="swatches"><i class="swatch" style="background:#295c47"></i><i class="swatch" style="background:#ff8a65"></i><i class="swatch" style="background:#fbf7ef"></i></div>
+          </button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Cores da marca</div>
+        <div class="field"><label for="primary">Cor principal</label><input id="primary" type="color" value="#4a2f24"></div>
+        <div class="field"><label for="accent">Cor de destaque</label><input id="accent" type="color" value="#c88f67"></div>
+        <div class="field"><label for="bg">Fundo</label><input id="bg" type="color" value="#f8f1e8"></div>
+        <div class="field"><label for="surface">Cards</label><input id="surface" type="color" value="#fffaf4"></div>
+        <div class="contrast"><span>Contraste do texto</span><strong class="pill" id="contrastPill">OK automático</strong></div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Marca</div>
+        <label class="logo-drop" for="logoUpload">
+          <div class="logo-thumb" id="logoThumb">EB</div>
+          <div>
+            <strong>Enviar logotipo</strong>
+            <span>PNG, JPG ou WebP. O preview aplica no topo do agendamento.</span>
+          </div>
+          <input id="logoUpload" type="file" accept="image/png,image/jpeg,image/webp">
+        </label>
+        <div class="field wide">
+          <label for="logoMode">Exibição no topo</label>
+          <select class="select-field" id="logoMode">
+            <option value="text">Somente nome</option>
+            <option value="logo-text" selected>Logo + nome</option>
+            <option value="logo">Somente logo</option>
+            <option value="badge">Logo em selo</option>
+          </select>
+        </div>
+        <div class="field wide">
+          <label for="logoSize">Tamanho</label>
+          <select class="select-field" id="logoSize">
+            <option value="sm">Pequeno</option>
+            <option value="md" selected>Médio</option>
+            <option value="lg">Grande</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Modo</div>
+        <div class="toggle">
+          <button class="active" data-mode="light">Claro</button>
+          <button data-mode="dark">Escuro</button>
+        </div>
+      </div>
+    </aside>
+
+    <main>
+      <div class="toolbar">
+        <h1>Preview do tenant</h1>
+        <div class="actions">
+          <button class="btn">Restaurar</button>
+          <button class="btn primary">Salvar tema</button>
+        </div>
+      </div>
+
+      <div class="preview-grid">
+        <div class="phone">
+          <div class="tenant" id="tenantPreview">
+            <div class="tenant-header">
+              <div class="tenant-brand" id="tenantBrand">
+                <img class="tenant-logo-img" id="tenantLogoImg" alt="">
+                <div class="tenant-logo-text" id="tenantLogoText">Espaço Bella</div>
+              </div>
+            </div>
+            <div class="tenant-info">Porto Alegre - RS · (51) 3713-1338</div>
+            <div class="steps">
+              <div class="step active">1</div>
+              <div class="step">2</div>
+              <div class="step">3</div>
+              <div class="step">4</div>
+            </div>
+            <div class="tenant-body">
+              <h2>Escolha seu serviço</h2>
+              <p>As cores abaixo seriam aplicadas no site público do tenant com texto calculado automaticamente.</p>
+              <div class="service-card">
+                <div><strong>Design de sobrancelha</strong><span>45min · Marcelo Mello</span></div>
+                <div class="price">R$ 80</div>
+              </div>
+              <div class="service-card">
+                <div><strong>Micropigmentação</strong><span>120min · Carla Pinto</span></div>
+                <div class="price">R$ 420</div>
+              </div>
+              <div class="slots">
+                <div class="slot">09:00</div>
+                <div class="slot">10:30</div>
+                <div class="slot">14:00</div>
+              </div>
+              <button class="tenant-cta">Continuar agendamento</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tokens">
+          <div class="token-row"><code>--color-bg</code><span>Fundo da página pública</span><i class="mini-swatch" data-token="bg"></i></div>
+          <div class="token-row"><code>--color-surface</code><span>Cards, barras e containers</span><i class="mini-swatch" data-token="surface"></i></div>
+          <div class="token-row"><code>--color-text</code><span>Texto calculado por contraste</span><i class="mini-swatch" data-token="text"></i></div>
+          <div class="token-row"><code>--color-muted</code><span>Texto secundário</span><i class="mini-swatch" data-token="muted"></i></div>
+          <div class="token-row"><code>--color-primary</code><span>Header, marca, ação principal</span><i class="mini-swatch" data-token="primary"></i></div>
+          <div class="token-row"><code>--color-accent</code><span>Botões e detalhes de destaque</span><i class="mini-swatch" data-token="accent"></i></div>
+          <div class="token-row"><code>--color-border</code><span>Bordas derivadas do fundo</span><i class="mini-swatch" data-token="border"></i></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const presets = {
+      bella: { primary: '#4a2f24', accent: '#c88f67', bg: '#f8f1e8', surface: '#fffaf4' },
+      clinic: { primary: '#175c62', accent: '#69b7a8', bg: '#eef8f6', surface: '#ffffff' },
+      luxury: { primary: '#111014', accent: '#d4af37', bg: '#18171d', surface: '#23212b' },
+      fresh: { primary: '#295c47', accent: '#ff8a65', bg: '#fbf7ef', surface: '#ffffff' }
+    }
+
+    const inputs = {
+      primary: document.getElementById('primary'),
+      accent: document.getElementById('accent'),
+      bg: document.getElementById('bg'),
+      surface: document.getElementById('surface')
+    }
+
+    const logoUpload = document.getElementById('logoUpload')
+    const logoThumb = document.getElementById('logoThumb')
+    const logoMode = document.getElementById('logoMode')
+    const logoSize = document.getElementById('logoSize')
+    const tenantLogoImg = document.getElementById('tenantLogoImg')
+    const tenantLogoText = document.getElementById('tenantLogoText')
+    const tenantBrand = document.getElementById('tenantBrand')
+    const defaultLogoSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" rx="32" fill="#4a2f24"/><circle cx="60" cy="60" r="42" fill="none" stroke="#c88f67" stroke-width="5"/><text x="60" y="71" text-anchor="middle" font-family="Georgia,serif" font-size="34" font-weight="700" fill="#fff8ef">EB</text></svg>`
+    let logoDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(defaultLogoSvg)
+
+    function hexToRgb(hex) {
+      const clean = hex.replace('#', '')
+      return {
+        r: parseInt(clean.slice(0, 2), 16),
+        g: parseInt(clean.slice(2, 4), 16),
+        b: parseInt(clean.slice(4, 6), 16)
+      }
+    }
+
+    function rgbToHex({ r, g, b }) {
+      return '#' + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('')
+    }
+
+    function luminance(hex) {
+      const { r, g, b } = hexToRgb(hex)
+      const values = [r, g, b].map(v => {
+        const x = v / 255
+        return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4)
+      })
+      return values[0] * 0.2126 + values[1] * 0.7152 + values[2] * 0.0722
+    }
+
+    function readableText(hex) {
+      return luminance(hex) > 0.48 ? '#241c18' : '#fffaf4'
+    }
+
+    function mix(a, b, amount) {
+      const ca = hexToRgb(a)
+      const cb = hexToRgb(b)
+      return rgbToHex({
+        r: ca.r + (cb.r - ca.r) * amount,
+        g: ca.g + (cb.g - ca.g) * amount,
+        b: ca.b + (cb.b - ca.b) * amount
+      })
+    }
+
+    function applyTheme() {
+      const primary = inputs.primary.value
+      const accent = inputs.accent.value
+      const bg = inputs.bg.value
+      const surface = inputs.surface.value
+      const text = readableText(bg)
+      const primaryText = readableText(primary)
+      const muted = mix(text, bg, .45)
+      const border = mix(text, bg, .82)
+
+      const root = document.documentElement.style
+      root.setProperty('--tenant-primary', primary)
+      root.setProperty('--tenant-accent', accent)
+      root.setProperty('--tenant-bg', bg)
+      root.setProperty('--tenant-surface', surface)
+      root.setProperty('--tenant-text', text)
+      root.setProperty('--tenant-primary-text', primaryText)
+      root.setProperty('--tenant-muted', muted)
+      root.setProperty('--tenant-border', border)
+
+      document.querySelector('[data-token="primary"]').style.background = primary
+      document.querySelector('[data-token="accent"]').style.background = accent
+      document.querySelector('[data-token="bg"]').style.background = bg
+      document.querySelector('[data-token="surface"]').style.background = surface
+      document.querySelector('[data-token="text"]').style.background = text
+      document.querySelector('[data-token="muted"]').style.background = muted
+      document.querySelector('[data-token="border"]').style.background = border
+      applyLogo()
+    }
+
+    function applyLogo() {
+      const mode = logoMode.value
+      const size = logoSize.value
+      const hasLogo = Boolean(logoDataUrl)
+
+      tenantLogoImg.src = hasLogo ? logoDataUrl : ''
+      tenantLogoImg.style.display = hasLogo && mode !== 'text' ? 'block' : 'none'
+      tenantLogoText.style.display = mode === 'logo' ? 'none' : 'block'
+      tenantLogoImg.className = `tenant-logo-img ${mode === 'badge' ? 'square' : ''} ${size}`
+      tenantLogoText.className = `tenant-logo-text ${size}`
+      tenantBrand.style.flexDirection = mode === 'badge' ? 'column' : 'row'
+
+      if (hasLogo) {
+        logoThumb.innerHTML = `<img src="${logoDataUrl}" alt="">`
+      } else {
+        logoThumb.textContent = 'EB'
+      }
+    }
+
+    document.querySelectorAll('.preset').forEach(button => {
+      button.addEventListener('click', () => {
+        document.querySelectorAll('.preset').forEach(p => p.classList.remove('active'))
+        button.classList.add('active')
+        const preset = presets[button.dataset.preset]
+        Object.entries(preset).forEach(([key, value]) => inputs[key].value = value)
+        applyTheme()
+      })
+    })
+
+    document.querySelectorAll('.toggle button').forEach(button => {
+      button.addEventListener('click', () => {
+        document.querySelectorAll('.toggle button').forEach(b => b.classList.remove('active'))
+        button.classList.add('active')
+        if (button.dataset.mode === 'dark') {
+          inputs.bg.value = '#18171d'
+          inputs.surface.value = '#23212b'
+          inputs.primary.value = '#111014'
+          inputs.accent.value = '#d4af37'
+        } else {
+          inputs.bg.value = '#f8f1e8'
+          inputs.surface.value = '#fffaf4'
+          inputs.primary.value = '#4a2f24'
+          inputs.accent.value = '#c88f67'
+        }
+        applyTheme()
+      })
+    })
+
+    Object.values(inputs).forEach(input => input.addEventListener('input', applyTheme))
+    logoMode.addEventListener('change', applyLogo)
+    logoSize.addEventListener('change', applyLogo)
+    logoUpload.addEventListener('change', () => {
+      const file = logoUpload.files?.[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = () => {
+        logoDataUrl = reader.result
+        applyLogo()
+      }
+      reader.readAsDataURL(file)
+    })
+    applyTheme()
+  </script>
+</body>
+</html>

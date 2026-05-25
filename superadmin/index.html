@@ -6,7 +6,7 @@
   <title>AutoAgenda — Super Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="stylesheet" href="/superadmin/style.css?v=6">
+  <link rel="stylesheet" href="/superadmin/style.css?v=7">
 </head>
 <body>
 
@@ -185,7 +185,20 @@
       </div>
     </div>
 
-    <div class="form-section-title">Cores</div>
+    <div class="form-section-title">Marca e cores</div>
+    <div class="brand-upload">
+      <img id="nLogoPreview" class="brand-logo-preview" style="display:none" alt="Logo do negócio">
+      <div class="brand-upload-main">
+        <label class="form-label">Logotipo</label>
+        <div class="brand-upload-actions">
+          <label class="btn btn-ghost btn-sm" for="nLogoFile">Enviar logo</label>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="removeNegocioLogo()">Remover</button>
+        </div>
+        <input type="file" id="nLogoFile" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="previewNegocioLogo(this)">
+        <input type="hidden" id="nLogoUrl">
+        <div class="form-hint" id="nLogoName">PNG, JPG ou WebP. Aparece no topo do site público.</div>
+      </div>
+    </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Primária</label>
@@ -388,6 +401,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/superadmin/app.js?v=19"></script>
+<script src="/superadmin/app.js?v=20"></script>
 </body>
 </html>

@@ -305,10 +305,13 @@ function aplicarCores(cores) {
 function aplicarHeader(negocio) {
   document.getElementById('headerLogo').textContent = negocio.nome
   document.title = negocio.nome + ' — Agendamento Online'
+  const img = document.getElementById('headerLogoImg')
   if (negocio.logo_url) {
-    const img = document.getElementById('headerLogoImg')
     img.src = negocio.logo_url
     img.style.display = 'block'
+  } else {
+    img.src = ''
+    img.style.display = 'none'
   }
 }
 

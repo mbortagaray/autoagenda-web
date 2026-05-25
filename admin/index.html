@@ -6,7 +6,7 @@
   <title>AutoAgenda — Painel Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="stylesheet" href="/admin/style.css?v=5">
+  <link rel="stylesheet" href="/admin/style.css?v=6">
 </head>
 <body>
 
@@ -483,7 +483,20 @@
         </div>
       </div>
       <div class="config-section">
-        <h2>Cores do site</h2>
+        <h2>Marca e cores do site</h2>
+        <div class="brand-upload">
+          <img id="cfgLogoPreview" class="brand-logo-preview" style="display:none" alt="Logo do negócio">
+          <div class="brand-upload-main">
+            <label class="form-label">Logotipo</label>
+            <div class="brand-upload-actions">
+              <label class="btn btn-ghost btn-sm" for="cfgLogoFile">Enviar logo</label>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="removeConfigLogo()">Remover</button>
+            </div>
+            <input type="file" id="cfgLogoFile" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="previewConfigLogo(this)">
+            <input type="hidden" id="cfgLogoUrl">
+            <div class="form-hint" id="cfgLogoName">PNG, JPG ou WebP. Aparece no topo do site público.</div>
+          </div>
+        </div>
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Primária</label>
@@ -515,6 +528,6 @@
 
 <script src="/admin/impersonation.js?v=4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/admin/app.js?v=23"></script>
+<script src="/admin/app.js?v=24"></script>
 </body>
 </html>

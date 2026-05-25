@@ -377,6 +377,27 @@ body.is-impersonating .content { padding-top: 70px; }
   font-size: 12px; color: var(--text-muted); max-width: 120px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.brand-upload {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  margin-bottom: 16px;
+}
+.brand-logo-preview {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  object-fit: cover;
+  border: 2px solid var(--border);
+  background: var(--white);
+  flex-shrink: 0;
+}
+.brand-upload-main { flex: 1; min-width: 0; }
+.brand-upload-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 6px; }
 
 /* CHECKBOX GRID */
 .checkbox-grid { display: flex; flex-wrap: wrap; gap: 8px; }

@@ -300,6 +300,32 @@ body {
 .modal-lg { max-width: 620px; }
 .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.form-hint {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.brand-upload {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  margin-bottom: 16px;
+}
+.brand-logo-preview {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  object-fit: cover;
+  border: 2px solid var(--border);
+  background: var(--white);
+  flex-shrink: 0;
+}
+.brand-upload-main { flex: 1; min-width: 0; }
+.brand-upload-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 6px; }
 
 /* PROFISSIONAIS - adicionar ao final do style.css */
 

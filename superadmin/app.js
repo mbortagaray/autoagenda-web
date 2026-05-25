@@ -307,6 +307,7 @@ function showNegocioForm() {
   document.getElementById('nCorPrimaria').value = '#3D2B1F'
   document.getElementById('nCorSecundaria').value = '#C4947A'
   document.getElementById('nCorFundo').value = '#F9F5F0'
+  setNegocioLogoPreview('')
   document.getElementById('nJanela').value = '24'
   document.getElementById('nAtivo').value = 'true'
   document.getElementById('modalNegocioError').style.display = 'none'
@@ -327,10 +328,54 @@ function editNegocio(id) {
   document.getElementById('nCorPrimaria').value = n.cor_primaria || '#3D2B1F'
   document.getElementById('nCorSecundaria').value = n.cor_secundaria || '#C4947A'
   document.getElementById('nCorFundo').value = n.cor_fundo || '#F9F5F0'
+  setNegocioLogoPreview(n.logo_url || '')
   document.getElementById('nJanela').value = n.janela_cancelamento_horas || 24
   document.getElementById('nAtivo').value = String(n.ativo !== false)
   document.getElementById('modalNegocioError').style.display = 'none'
   document.getElementById('modalNegocio').style.display = 'flex'
+}
+
+function setNegocioLogoPreview(url, fileName = '') {
+  const preview = document.getElementById('nLogoPreview')
+  const nameEl = document.getElementById('nLogoName')
+  document.getElementById('nLogoUrl').value = url || ''
+  document.getElementById('nLogoFile').value = ''
+  if (url) {
+    preview.src = url
+    preview.style.display = 'block'
+    nameEl.textContent = fileName || 'Logo atual do negócio.'
+  } else {
+    preview.src = ''
+    preview.style.display = 'none'
+    nameEl.textContent = 'PNG, JPG ou WebP. Aparece no topo do site público.'
+  }
+}
+
+function previewNegocioLogo(input) {
+  const file = input.files[0]
+  if (!file) return
+  const preview = document.getElementById('nLogoPreview')
+  preview.src = URL.createObjectURL(file)
+  preview.style.display = 'block'
+  document.getElementById('nLogoName').textContent = file.name
+}
+
+function removeNegocioLogo() {
+  setNegocioLogoPreview('')
+  document.getElementById('nLogoName').textContent = 'Logo removido. Salve o negócio para aplicar.'
+}
+
+async function uploadNegocioLogo(negocioId) {
+  const fileInput = document.getElementById('nLogoFile')
+  const file = fileInput.files[0]
+  if (!file) return document.getElementById('nLogoUrl').value || null
+
+  const ext = file.name.split('.').pop()
+  const path = `negocios/${negocioId}/logo.${ext}`
+  const { error } = await sb.storage.from('fotos').upload(path, file, { upsert: true, contentType: file.type })
+  if (error) return document.getElementById('nLogoUrl').value || null
+  const { data } = sb.storage.from('fotos').getPublicUrl(path)
+  return data.publicUrl + '?t=' + Date.now()
 }
 
 async function saveNegocio() {
@@ -353,6 +398,7 @@ async function saveNegocio() {
     endereco: document.getElementById('nEndereco').value.trim() || null,
     cidade: document.getElementById('nCidade').value.trim() || null,
     google_maps_url: document.getElementById('nMaps').value.trim() || null,
+    logo_url: document.getElementById('nLogoUrl').value || null,
     cor_primaria: document.getElementById('nCorPrimaria').value,
     cor_secundaria: document.getElementById('nCorSecundaria').value,
     cor_fundo: document.getElementById('nCorFundo').value,
@@ -362,9 +408,17 @@ async function saveNegocio() {
 
   let error
   if (editingNegocioId) {
+    payload.logo_url = await uploadNegocioLogo(editingNegocioId)
     ;({ error } = await sb.from('negocios').update(payload).eq('id', editingNegocioId))
   } else {
-    ;({ error } = await sb.from('negocios').insert(payload))
+    const result = await sb.from('negocios').insert(payload).select('id').single()
+    error = result.error
+    if (!error) {
+      const logoUrl = await uploadNegocioLogo(result.data.id)
+      if (logoUrl) {
+        ;({ error } = await sb.from('negocios').update({ logo_url: logoUrl }).eq('id', result.data.id))
+      }
+    }
   }
 
   if (error) {
