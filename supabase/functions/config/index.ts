@@ -72,6 +72,8 @@ Deno.serve(async (req) => {
       nome: negocio.nome,
       telefone: negocio.telefone,
       logo_url: negocio.logo_url,
+      logo_modo: negocio.logo_modo,
+      logo_tamanho: negocio.logo_tamanho,
       endereco: negocio.endereco,
       cidade: negocio.cidade,
       google_maps_url: negocio.google_maps_url,
@@ -79,6 +81,8 @@ Deno.serve(async (req) => {
         primaria: negocio.cor_primaria,
         secundaria: negocio.cor_secundaria,
         fundo: negocio.cor_fundo,
+        superficie: negocio.cor_superficie,
+        modo: negocio.tema_modo,
       },
       horarios: {
         abertura_manha: negocio.horario_abertura_manha,

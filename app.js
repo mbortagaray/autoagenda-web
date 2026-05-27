@@ -48,6 +48,43 @@ function formatPhone(value) {
   return formatPhoneDigits(normalizePhone(value))
 }
 
+function hexToRgb(hex) {
+  const clean = String(hex || '').replace('#', '')
+  if (!/^[0-9a-fA-F]{6}$/.test(clean)) return { r: 255, g: 255, b: 255 }
+  return {
+    r: parseInt(clean.slice(0, 2), 16),
+    g: parseInt(clean.slice(2, 4), 16),
+    b: parseInt(clean.slice(4, 6), 16),
+  }
+}
+
+function rgbToHex({ r, g, b }) {
+  return '#' + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('')
+}
+
+function luminance(hex) {
+  const { r, g, b } = hexToRgb(hex)
+  const values = [r, g, b].map(v => {
+    const x = v / 255
+    return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4)
+  })
+  return values[0] * 0.2126 + values[1] * 0.7152 + values[2] * 0.0722
+}
+
+function readableText(hex) {
+  return luminance(hex) > 0.48 ? '#241c18' : '#fffaf4'
+}
+
+function mixHex(a, b, amount) {
+  const ca = hexToRgb(a)
+  const cb = hexToRgb(b)
+  return rgbToHex({
+    r: ca.r + (cb.r - ca.r) * amount,
+    g: ca.g + (cb.g - ca.g) * amount,
+    b: ca.b + (cb.b - ca.b) * amount,
+  })
+}
+
 // ---- STATE ----
 let config = null
 let avisosAgenda = []
@@ -297,16 +334,47 @@ function showLoading(show) {
 
 function aplicarCores(cores) {
   if (!cores) return
-  document.documentElement.style.setProperty('--brown', cores.primaria)
-  document.documentElement.style.setProperty('--rose', cores.secundaria)
-  document.documentElement.style.setProperty('--cream', cores.fundo)
+  const primary = cores.primaria || '#3D2B1F'
+  const accent = cores.secundaria || '#C4947A'
+  const bg = cores.fundo || '#F9F5F0'
+  const surface = cores.superficie || (cores.modo === 'dark' ? '#23212b' : '#FFFFFF')
+  const text = readableText(bg)
+  const surfaceText = readableText(surface)
+  const primaryText = readableText(primary)
+  const accentText = readableText(accent)
+  const muted = mixHex(text, bg, 0.45)
+  const border = mixHex(text, bg, 0.82)
+
+  const root = document.documentElement.style
+  root.setProperty('--brown', primary)
+  root.setProperty('--brown-light', mixHex(primary, accent, 0.35))
+  root.setProperty('--rose', accent)
+  root.setProperty('--rose-dark', mixHex(accent, primary, 0.28))
+  root.setProperty('--rose-light', mixHex(accent, bg, 0.35))
+  root.setProperty('--cream', bg)
+  root.setProperty('--sand', border)
+  root.setProperty('--white', surface)
+  root.setProperty('--text', text)
+  root.setProperty('--surface-text', surfaceText)
+  root.setProperty('--text-muted', muted)
+  root.setProperty('--primary-text', primaryText)
+  root.setProperty('--accent-text', accentText)
 }
 
 function aplicarHeader(negocio) {
   document.getElementById('headerLogo').textContent = negocio.nome
   document.title = negocio.nome + ' — Agendamento Online'
   const img = document.getElementById('headerLogoImg')
-  if (negocio.logo_url) {
+  const logoMode = negocio.logo_modo || (negocio.logo_url ? 'logo-text' : 'text')
+  const logoSize = negocio.logo_tamanho || 'md'
+  const showLogo = Boolean(negocio.logo_url) && logoMode !== 'text'
+  const showName = logoMode !== 'logo'
+
+  document.querySelector('.header-inner')?.classList.toggle('header-inner-badge', logoMode === 'badge')
+  document.getElementById('headerLogo').style.display = showName ? 'block' : 'none'
+  document.getElementById('headerLogo').className = `header-logo logo-${logoSize}`
+  img.className = `header-logo-img ${logoMode === 'badge' ? 'square' : ''} logo-${logoSize}`
+  if (showLogo) {
     img.src = negocio.logo_url
     img.style.display = 'block'
   } else {

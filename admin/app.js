@@ -17,6 +17,13 @@ let servicos = []
 let profissionais = []
 let editingId = null
 
+const TENANT_THEME_PRESETS = {
+  bella: { cor_primaria: '#4a2f24', cor_secundaria: '#c88f67', cor_fundo: '#f8f1e8', cor_superficie: '#fffaf4', tema_modo: 'light' },
+  clinic: { cor_primaria: '#175c62', cor_secundaria: '#69b7a8', cor_fundo: '#eef8f6', cor_superficie: '#ffffff', tema_modo: 'light' },
+  luxury: { cor_primaria: '#111014', cor_secundaria: '#d4af37', cor_fundo: '#18171d', cor_superficie: '#23212b', tema_modo: 'dark' },
+  fresh: { cor_primaria: '#295c47', cor_secundaria: '#ff8a65', cor_fundo: '#fbf7ef', cor_superficie: '#ffffff', tema_modo: 'light' },
+}
+
 function getPhoneDigits(value) {
   let digits = String(value || '').replace(/\D/g, '')
   if (digits.length > 11 && digits.startsWith('55')) digits = digits.slice(2)
@@ -43,6 +50,43 @@ function formatPhoneDigits(digits) {
 
 function formatPhone(value) {
   return formatPhoneDigits(normalizePhone(value))
+}
+
+function hexToRgb(hex) {
+  const clean = String(hex || '').replace('#', '')
+  if (!/^[0-9a-fA-F]{6}$/.test(clean)) return { r: 255, g: 255, b: 255 }
+  return {
+    r: parseInt(clean.slice(0, 2), 16),
+    g: parseInt(clean.slice(2, 4), 16),
+    b: parseInt(clean.slice(4, 6), 16),
+  }
+}
+
+function rgbToHex({ r, g, b }) {
+  return '#' + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('')
+}
+
+function luminance(hex) {
+  const { r, g, b } = hexToRgb(hex)
+  const values = [r, g, b].map(v => {
+    const x = v / 255
+    return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4)
+  })
+  return values[0] * 0.2126 + values[1] * 0.7152 + values[2] * 0.0722
+}
+
+function readableText(hex) {
+  return luminance(hex) > 0.48 ? '#241c18' : '#fffaf4'
+}
+
+function mixHex(a, b, amount) {
+  const ca = hexToRgb(a)
+  const cb = hexToRgb(b)
+  return rgbToHex({
+    r: ca.r + (cb.r - ca.r) * amount,
+    g: ca.g + (cb.g - ca.g) * amount,
+    b: ca.b + (cb.b - ca.b) * amount,
+  })
 }
 
 function formatDateBR(dateStr) {
@@ -843,6 +887,7 @@ function previewConfigLogo(input) {
   preview.src = URL.createObjectURL(file)
   preview.style.display = 'block'
   document.getElementById('cfgLogoName').textContent = file.name
+  updateThemePreview()
 }
 
 function removeConfigLogo() {
@@ -851,6 +896,7 @@ function removeConfigLogo() {
   document.getElementById('cfgLogoPreview').style.display = 'none'
   document.getElementById('cfgLogoPreview').src = ''
   document.getElementById('cfgLogoName').textContent = 'Logo removido. Salve as configurações para aplicar.'
+  updateThemePreview()
 }
 
 async function uploadConfigLogo() {
@@ -1489,6 +1535,98 @@ function renderClientes(list) {
 }
 
 // ============ CONFIG ============
+function getThemeFormValues() {
+  return {
+    primary: document.getElementById('cfgCorPrimaria')?.value || '#3D2B1F',
+    accent: document.getElementById('cfgCorSecundaria')?.value || '#C4947A',
+    bg: document.getElementById('cfgCorFundo')?.value || '#F9F5F0',
+    surface: document.getElementById('cfgCorSuperficie')?.value || '#FFFFFF',
+    logoMode: document.getElementById('cfgLogoModo')?.value || 'logo-text',
+    logoSize: document.getElementById('cfgLogoTamanho')?.value || 'md',
+  }
+}
+
+function updateThemePresetActive() {
+  const current = {
+    cor_primaria: document.getElementById('cfgCorPrimaria')?.value,
+    cor_secundaria: document.getElementById('cfgCorSecundaria')?.value,
+    cor_fundo: document.getElementById('cfgCorFundo')?.value,
+    cor_superficie: document.getElementById('cfgCorSuperficie')?.value,
+    tema_modo: document.getElementById('cfgTemaModo')?.value,
+  }
+  document.querySelectorAll('[data-theme-preset]').forEach(button => {
+    const preset = TENANT_THEME_PRESETS[button.dataset.themePreset]
+    const active = preset
+      && preset.cor_primaria === current.cor_primaria
+      && preset.cor_secundaria === current.cor_secundaria
+      && preset.cor_fundo === current.cor_fundo
+      && preset.cor_superficie === current.cor_superficie
+      && preset.tema_modo === current.tema_modo
+    button.classList.toggle('active', Boolean(active))
+  })
+}
+
+function updateThemePreview() {
+  const preview = document.getElementById('cfgThemePreview')
+  if (!preview) return
+
+  const values = getThemeFormValues()
+  const text = readableText(values.bg)
+  const primaryText = readableText(values.primary)
+  const accentText = readableText(values.accent)
+  const muted = mixHex(text, values.bg, 0.45)
+  const border = mixHex(text, values.bg, 0.82)
+
+  preview.style.setProperty('--preview-primary', values.primary)
+  preview.style.setProperty('--preview-accent', values.accent)
+  preview.style.setProperty('--preview-bg', values.bg)
+  preview.style.setProperty('--preview-surface', values.surface)
+  preview.style.setProperty('--preview-text', text)
+  preview.style.setProperty('--preview-primary-text', primaryText)
+  preview.style.setProperty('--preview-accent-text', accentText)
+  preview.style.setProperty('--preview-muted', muted)
+  preview.style.setProperty('--preview-border', border)
+
+  const name = document.getElementById('cfgThemePreviewName')
+  const logo = document.getElementById('cfgThemePreviewLogo')
+  const header = preview.querySelector('.theme-preview-header')
+  const logoSrc = document.getElementById('cfgLogoPreview')?.src || document.getElementById('cfgLogoUrl')?.value || ''
+
+  name.textContent = document.getElementById('cfgNome')?.value || negocio?.nome || 'Espaco Bella'
+  name.classList.toggle('hidden', values.logoMode === 'logo')
+  logo.classList.toggle('hidden', !logoSrc || values.logoMode === 'text')
+  logo.classList.toggle('square', values.logoMode === 'badge')
+  header.classList.toggle('badge', values.logoMode === 'badge')
+  if (logoSrc) logo.src = logoSrc
+  logo.style.width = values.logoSize === 'lg' ? '54px' : values.logoSize === 'sm' ? '34px' : '42px'
+  logo.style.height = logo.style.width
+  name.style.fontSize = values.logoSize === 'lg' ? '22px' : values.logoSize === 'sm' ? '17px' : '20px'
+
+  updateThemePresetActive()
+}
+
+function applyThemePreset(name) {
+  const preset = TENANT_THEME_PRESETS[name]
+  if (!preset) return
+  document.getElementById('cfgCorPrimaria').value = preset.cor_primaria
+  document.getElementById('cfgCorSecundaria').value = preset.cor_secundaria
+  document.getElementById('cfgCorFundo').value = preset.cor_fundo
+  document.getElementById('cfgCorSuperficie').value = preset.cor_superficie
+  document.getElementById('cfgTemaModo').value = preset.tema_modo
+  updateThemePreview()
+}
+
+function initThemeConfigControls() {
+  document.querySelectorAll('[data-theme-preset]').forEach(button => {
+    button.addEventListener('click', () => applyThemePreset(button.dataset.themePreset))
+  })
+  ;['cfgNome', 'cfgCorPrimaria', 'cfgCorSecundaria', 'cfgCorFundo', 'cfgCorSuperficie', 'cfgTemaModo', 'cfgLogoModo', 'cfgLogoTamanho'].forEach(id => {
+    const el = document.getElementById(id)
+    if (el) el.addEventListener('input', updateThemePreview)
+    if (el) el.addEventListener('change', updateThemePreview)
+  })
+}
+
 function loadConfig() {
   document.getElementById('cfgNome').value = negocio.nome || ''
   document.getElementById('cfgTel').value = formatPhone(negocio.telefone || '')
@@ -1501,6 +1639,10 @@ function loadConfig() {
   document.getElementById('cfgCorPrimaria').value = negocio.cor_primaria || '#3D2B1F'
   document.getElementById('cfgCorSecundaria').value = negocio.cor_secundaria || '#C4947A'
   document.getElementById('cfgCorFundo').value = negocio.cor_fundo || '#F9F5F0'
+  document.getElementById('cfgCorSuperficie').value = negocio.cor_superficie || '#FFFFFF'
+  document.getElementById('cfgTemaModo').value = negocio.tema_modo || 'light'
+  document.getElementById('cfgLogoModo').value = negocio.logo_modo || (negocio.logo_url ? 'logo-text' : 'text')
+  document.getElementById('cfgLogoTamanho').value = negocio.logo_tamanho || 'md'
   document.getElementById('cfgLogoUrl').value = negocio.logo_url || ''
   document.getElementById('cfgLogoFile').value = ''
   const logoPreview = document.getElementById('cfgLogoPreview')
@@ -1515,6 +1657,7 @@ function loadConfig() {
     logoName.textContent = 'PNG, JPG ou WebP. Aparece no topo do site público.'
   }
   document.getElementById('cfgJanela').value = negocio.janela_cancelamento_horas || 24
+  updateThemePreview()
 }
 
 async function saveConfig() {
@@ -1532,6 +1675,10 @@ async function saveConfig() {
     cor_primaria: document.getElementById('cfgCorPrimaria').value,
     cor_secundaria: document.getElementById('cfgCorSecundaria').value,
     cor_fundo: document.getElementById('cfgCorFundo').value,
+    cor_superficie: document.getElementById('cfgCorSuperficie').value,
+    tema_modo: document.getElementById('cfgTemaModo').value,
+    logo_modo: document.getElementById('cfgLogoModo').value,
+    logo_tamanho: document.getElementById('cfgLogoTamanho').value,
     janela_cancelamento_horas: parseInt(document.getElementById('cfgJanela').value),
   }
 
@@ -1550,6 +1697,7 @@ async function saveConfig() {
       document.getElementById('cfgLogoPreview').style.display = 'block'
       document.getElementById('cfgLogoName').textContent = 'Logo atual do negócio.'
     }
+    updateThemePreview()
   }
   setTimeout(() => feedback.innerHTML = '', 3000)
 }
@@ -1562,6 +1710,7 @@ function closeModal(id) {
 
 // ============ INIT ============
 initTheme()
+initThemeConfigControls()
 checkAuth()
 
 // ============ IMPERSONATION ============

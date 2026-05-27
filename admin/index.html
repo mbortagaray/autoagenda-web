@@ -497,6 +497,28 @@
             <div class="form-hint" id="cfgLogoName">PNG, JPG ou WebP. Aparece no topo do site público.</div>
           </div>
         </div>
+        <div class="theme-presets" id="cfgThemePresets">
+          <button type="button" class="theme-preset" data-theme-preset="bella">
+            Beauty quente
+            <span>Salao e estetica</span>
+            <i style="--s1:#4a2f24;--s2:#c88f67;--s3:#f8f1e8"></i>
+          </button>
+          <button type="button" class="theme-preset" data-theme-preset="clinic">
+            Clinica clean
+            <span>Saude e consultorio</span>
+            <i style="--s1:#175c62;--s2:#69b7a8;--s3:#eef8f6"></i>
+          </button>
+          <button type="button" class="theme-preset" data-theme-preset="luxury">
+            Luxo escuro
+            <span>Premium</span>
+            <i style="--s1:#111014;--s2:#d4af37;--s3:#18171d"></i>
+          </button>
+          <button type="button" class="theme-preset" data-theme-preset="fresh">
+            Fresh claro
+            <span>Leve e jovem</span>
+            <i style="--s1:#295c47;--s2:#ff8a65;--s3:#fbf7ef"></i>
+          </button>
+        </div>
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Primária</label>
@@ -509,6 +531,49 @@
           <div class="form-group">
             <label class="form-label">Fundo</label>
             <input class="form-input" type="color" id="cfgCorFundo" value="#F9F5F0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cards</label>
+            <input class="form-input" type="color" id="cfgCorSuperficie" value="#FFFFFF">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Modo</label>
+            <select class="form-input" id="cfgTemaModo">
+              <option value="light">Claro</option>
+              <option value="dark">Escuro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Exibicao no topo</label>
+            <select class="form-input" id="cfgLogoModo">
+              <option value="text">Somente nome</option>
+              <option value="logo-text">Logo + nome</option>
+              <option value="logo">Somente logo</option>
+              <option value="badge">Logo em selo</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tamanho da marca</label>
+            <select class="form-input" id="cfgLogoTamanho">
+              <option value="sm">Pequeno</option>
+              <option value="md">Medio</option>
+              <option value="lg">Grande</option>
+            </select>
+          </div>
+        </div>
+        <div class="theme-preview" id="cfgThemePreview">
+          <div class="theme-preview-header">
+            <img id="cfgThemePreviewLogo" alt="">
+            <strong id="cfgThemePreviewName">Espaco Bella</strong>
+          </div>
+          <div class="theme-preview-body">
+            <div>
+              <strong>Design de sobrancelha</strong>
+              <span>45min - Marcelo Mello</span>
+            </div>
+            <button type="button">Continuar</button>
           </div>
         </div>
       </div>
@@ -528,6 +593,6 @@
 
 <script src="/admin/impersonation.js?v=4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/admin/app.js?v=24"></script>
+<script src="/admin/app.js?v=25"></script>
 </body>
 </html>

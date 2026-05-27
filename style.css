@@ -7,7 +7,10 @@
   --brown: #3D2B1F;
   --brown-light: #6B4C3B;
   --text: #2A1F1A;
+  --surface-text: #2A1F1A;
   --text-muted: #8A7060;
+  --primary-text: #FFFFFF;
+  --accent-text: #FFFFFF;
   --white: #FFFFFF;
   --success: #7A9E7E;
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
@@ -51,14 +54,20 @@ body {
   object-fit: cover;
   border: 2px solid var(--rose);
 }
+.header-logo-img.logo-sm { width: 30px; height: 30px; }
+.header-logo-img.logo-lg { width: 48px; height: 48px; }
+.header-logo-img.square { border-radius: 12px; }
+.header-inner-badge { flex-direction: column; }
 .header-logo {
   font-family: 'Cormorant Garamond', serif;
   font-size: 24px;
   font-weight: 300;
-  color: var(--cream);
+  color: var(--primary-text);
   letter-spacing: 3px;
   text-transform: uppercase;
 }
+.header-logo.logo-sm { font-size: 20px; }
+.header-logo.logo-lg { font-size: 28px; }
 
 /* BUSINESS INFO BAR */
 .biz-info {
@@ -119,8 +128,8 @@ body {
   transition: all 0.3s;
   flex-shrink: 0;
 }
-.step-dot.active { background: var(--rose); border-color: var(--rose); color: white; transform: scale(1.1); }
-.step-dot.done { background: var(--brown); border-color: var(--brown); color: white; }
+.step-dot.active { background: var(--rose); border-color: var(--rose); color: var(--accent-text); transform: scale(1.1); }
+.step-dot.done { background: var(--brown); border-color: var(--brown); color: var(--primary-text); }
 .step-line {
   flex: 1; height: 2px;
   background: var(--sand);
@@ -259,13 +268,13 @@ body {
 }
 .sel-card:hover { border-color: var(--rose-light); box-shadow: var(--shadow-md); }
 .sel-card:active { transform: scale(0.98); }
-.sel-card.selected { border-color: var(--rose); background: #FDF8F5; box-shadow: 0 0 0 1px var(--rose); }
+.sel-card.selected { border-color: var(--rose); background: color-mix(in srgb, var(--rose) 12%, var(--white)); box-shadow: 0 0 0 1px var(--rose); }
 .sel-card.selected::after {
   content: '\2713';
   position: absolute; top: 12px; right: 14px;
   width: 22px; height: 22px;
   background: var(--rose);
-  color: white;
+  color: var(--accent-text);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 12px; font-weight: 700;
@@ -306,11 +315,11 @@ body {
   box-shadow: var(--shadow-sm);
 }
 .prof-card:hover { border-color: var(--rose-light); box-shadow: var(--shadow-md); }
-.prof-card.selected { border-color: var(--rose); background: #FDF8F5; box-shadow: 0 0 0 1px var(--rose); }
+.prof-card.selected { border-color: var(--rose); background: color-mix(in srgb, var(--rose) 12%, var(--white)); box-shadow: 0 0 0 1px var(--rose); }
 .prof-card.selected::after {
   content: '\2713'; position: absolute; right: 14px;
   width: 22px; height: 22px;
-  background: var(--rose); color: white;
+  background: var(--rose); color: var(--accent-text);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 12px; font-weight: 700;
@@ -371,11 +380,11 @@ body {
   content: ''; position: absolute; bottom: 3px;
   width: 4px; height: 4px; border-radius: 50%; background: var(--rose);
 }
-.cal-day.selected { background: var(--rose); color: white; font-weight: 600; }
+.cal-day.selected { background: var(--rose); color: var(--accent-text); font-weight: 600; }
 .cal-day.selected::after { background: white; }
-.cal-day.selected-lotado { background: var(--brown); color: white; font-weight: 600; cursor: default; }
+.cal-day.selected-lotado { background: var(--brown); color: var(--primary-text); font-weight: 600; cursor: default; }
 .cal-day.selected-lotado::after { background: var(--cream); }
-.cal-day.proximo.selected { background: var(--brown); color: white; }
+.cal-day.proximo.selected { background: var(--brown); color: var(--primary-text); }
 .cal-day.proximo.selected::after { background: var(--cream); }
 .cal-day.today { border: 2px solid var(--rose); font-weight: 600; }
 
@@ -413,7 +422,7 @@ body {
 }
 .slot:hover { border-color: var(--rose-light); box-shadow: var(--shadow-md); }
 .slot:active { transform: scale(0.95); }
-.slot.selected { background: var(--rose); border-color: var(--rose); color: white; box-shadow: 0 0 0 1px var(--rose); }
+.slot.selected { background: var(--rose); border-color: var(--rose); color: var(--accent-text); box-shadow: 0 0 0 1px var(--rose); }
 .slot.unavailable {
   background: var(--cream); color: var(--sand);
   cursor: not-allowed; text-decoration: line-through;
@@ -461,7 +470,7 @@ body {
   cursor: pointer; transition: all 0.2s; letter-spacing: 0.5px;
 }
 .btn-primary {
-  background: var(--brown); color: white;
+  background: var(--brown); color: var(--primary-text);
   box-shadow: var(--shadow-md);
 }
 .btn-primary:hover { background: var(--brown-light); box-shadow: var(--shadow-lg); }
@@ -565,7 +574,7 @@ body {
   width: 100%; padding: 10px; border-radius: 10px; border: none;
   font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
   cursor: pointer; transition: all 0.2s;
-  background: var(--rose); color: white;
+  background: var(--rose); color: var(--accent-text);
 }
 .btn-card:hover { background: var(--rose-dark); }
 .btn-card:active { transform: scale(0.98); }
@@ -597,7 +606,7 @@ body {
   border-radius: 20px; cursor: pointer; white-space: nowrap;
   transition: all 0.2s; box-shadow: var(--shadow-sm);
 }
-.btn-consulta:hover { background: var(--rose); color: white; }
+.btn-consulta:hover { background: var(--rose); color: var(--accent-text); }
 .btn-consulta:hover svg { stroke: white; }
 
 /* DATE CONTEXT */
